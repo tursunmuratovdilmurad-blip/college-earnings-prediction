@@ -10,7 +10,7 @@ The data comes from the U.S. Department of Education
 
 Work in progress. The plan:
 
-- [ ] Data pipeline notebook (cleaning, feature engineering, model training, evaluation)
+- [x] Data pipeline notebook (cleaning, feature engineering, model training, evaluation)
 - [ ] Streamlit app with data exploration, preprocessing, model comparison and prediction pages
 - [ ] Setup instructions and pinned requirements
 
