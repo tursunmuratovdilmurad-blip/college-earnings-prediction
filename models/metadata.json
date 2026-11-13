@@ -1,0 +1,772 @@
+{
+  "created": "2026-11-13T04:38:25",
+  "dataset": {
+    "name": "College Scorecard - Most Recent Cohorts (Institution)",
+    "url": "https://collegescorecard.ed.gov/data/",
+    "file": "Most-Recent-Cohorts-Institution.csv",
+    "rows_raw": 6272,
+    "columns_raw": 3379,
+    "rows_modelled": 3967
+  },
+  "target": {
+    "name": "MD_EARN_WNE_P10",
+    "label": "Median earnings 10 years after entry (USD)",
+    "transform": "log"
+  },
+  "random_state": 42,
+  "split": {
+    "train": 2776,
+    "validation": 595,
+    "test": 596
+  },
+  "features": {
+    "all": [
+      "UGDS",
+      "NUMBRANCH",
+      "PPTUG_EF",
+      "UG25ABV",
+      "PCTPELL",
+      "PCTFLOAN",
+      "UGDS_WOMEN",
+      "UGDS_WHITE",
+      "UGDS_BLACK",
+      "UGDS_HISP",
+      "UGDS_ASIAN",
+      "UGDS_NRA",
+      "TUITION",
+      "COST_ATTEND",
+      "NET_PRICE",
+      "TUITFTE",
+      "INEXPFTE",
+      "INSTR_PER_TUITION",
+      "AVGFACSAL",
+      "PFTFAC",
+      "STUFACR",
+      "ADM_RATE_FILLED",
+      "COMPLETION_RATE",
+      "RETENTION_RATE",
+      "MD_FAMINC",
+      "FIRST_GEN",
+      "AGE_ENTRY",
+      "MARRIED",
+      "MEDIAN_HH_INC",
+      "POVERTY_RATE",
+      "UNEMP_RATE",
+      "PCT_BA",
+      "STEM_SHARE",
+      "HEALTH_SHARE",
+      "BUSINESS_SHARE",
+      "TRADES_SHARE",
+      "ARTS_HUM_SHARE",
+      "EDU_SOCIAL_SHARE",
+      "PROGRAM_HHI",
+      "HBCU",
+      "DISTANCEONLY",
+      "OPEN_ADMISSION",
+      "SINGLE_SEX",
+      "MULTI_CAMPUS",
+      "HIGHDEG",
+      "CONTROL",
+      "PREDDEG",
+      "REGION",
+      "LOCALE_TYPE",
+      "STABBR"
+    ],
+    "numeric": [
+      "UGDS",
+      "NUMBRANCH",
+      "PPTUG_EF",
+      "UG25ABV",
+      "PCTPELL",
+      "PCTFLOAN",
+      "UGDS_WOMEN",
+      "UGDS_WHITE",
+      "UGDS_BLACK",
+      "UGDS_HISP",
+      "UGDS_ASIAN",
+      "UGDS_NRA",
+      "TUITION",
+      "COST_ATTEND",
+      "NET_PRICE",
+      "TUITFTE",
+      "INEXPFTE",
+      "INSTR_PER_TUITION",
+      "AVGFACSAL",
+      "PFTFAC",
+      "STUFACR",
+      "ADM_RATE_FILLED",
+      "COMPLETION_RATE",
+      "RETENTION_RATE",
+      "MD_FAMINC",
+      "FIRST_GEN",
+      "AGE_ENTRY",
+      "MARRIED",
+      "MEDIAN_HH_INC",
+      "POVERTY_RATE",
+      "UNEMP_RATE",
+      "PCT_BA",
+      "STEM_SHARE",
+      "HEALTH_SHARE",
+      "BUSINESS_SHARE",
+      "TRADES_SHARE",
+      "ARTS_HUM_SHARE",
+      "EDU_SOCIAL_SHARE",
+      "PROGRAM_HHI"
+    ],
+    "log_transformed": [
+      "UGDS",
+      "NUMBRANCH",
+      "TUITION",
+      "COST_ATTEND",
+      "TUITFTE",
+      "INEXPFTE",
+      "INSTR_PER_TUITION",
+      "AVGFACSAL",
+      "STUFACR",
+      "MD_FAMINC"
+    ],
+    "binary": [
+      "HBCU",
+      "DISTANCEONLY",
+      "OPEN_ADMISSION",
+      "SINGLE_SEX",
+      "MULTI_CAMPUS"
+    ],
+    "ordinal": [
+      "HIGHDEG"
+    ],
+    "onehot": [
+      "CONTROL",
+      "PREDDEG",
+      "REGION",
+      "LOCALE_TYPE"
+    ],
+    "target_encoded": [
+      "STABBR"
+    ],
+    "dropped_for_missingness": [
+      "SAT_AVG"
+    ],
+    "labels": {
+      "UGDS": "Undergraduate enrolment",
+      "NUMBRANCH": "Number of campuses",
+      "PPTUG_EF": "Share of part-time undergraduates",
+      "UG25ABV": "Share of undergraduates aged 25+",
+      "PCTPELL": "Share receiving a Pell grant",
+      "PCTFLOAN": "Share receiving a federal loan",
+      "UGDS_WOMEN": "Share of women",
+      "UGDS_WHITE": "Share White",
+      "UGDS_BLACK": "Share Black",
+      "UGDS_HISP": "Share Hispanic",
+      "UGDS_ASIAN": "Share Asian",
+      "UGDS_NRA": "Share international students",
+      "TUITION": "Tuition and fees (USD / year)",
+      "COST_ATTEND": "Average cost of attendance (USD / year)",
+      "NET_PRICE": "Average net price (USD / year)",
+      "TUITFTE": "Net tuition revenue per student (USD)",
+      "INEXPFTE": "Instructional spending per student (USD)",
+      "INSTR_PER_TUITION": "Instructional spending per tuition dollar",
+      "AVGFACSAL": "Average faculty salary (USD / month)",
+      "PFTFAC": "Share of full-time faculty",
+      "STUFACR": "Student-to-faculty ratio",
+      "ADM_RATE_FILLED": "Admission rate (1 = open admission)",
+      "COMPLETION_RATE": "Completion rate (150 % of normal time)",
+      "RETENTION_RATE": "First-year retention rate",
+      "MD_FAMINC": "Median family income of students (USD)",
+      "FIRST_GEN": "Share of first-generation students",
+      "AGE_ENTRY": "Average age at entry",
+      "MARRIED": "Share of married students",
+      "MEDIAN_HH_INC": "Median household income, students' home areas (USD)",
+      "POVERTY_RATE": "Poverty rate, students' home areas (%)",
+      "UNEMP_RATE": "Unemployment rate, students' home areas (%)",
+      "PCT_BA": "Adults with a bachelor's degree, students' home areas (%)",
+      "STEM_SHARE": "Share of awards in STEM",
+      "HEALTH_SHARE": "Share of awards in health",
+      "BUSINESS_SHARE": "Share of awards in business",
+      "TRADES_SHARE": "Share of awards in trades and personal services",
+      "ARTS_HUM_SHARE": "Share of awards in arts and humanities",
+      "EDU_SOCIAL_SHARE": "Share of awards in education and social sciences",
+      "PROGRAM_HHI": "Programme concentration (1 = single programme)",
+      "HBCU": "Historically Black college",
+      "DISTANCEONLY": "Distance-education only",
+      "OPEN_ADMISSION": "Open admission policy",
+      "SINGLE_SEX": "Single-sex college",
+      "MULTI_CAMPUS": "More than one campus",
+      "HIGHDEG": "Highest degree offered (1 certificate ... 4 graduate)",
+      "CONTROL": "Control (ownership)",
+      "PREDDEG": "Predominant degree awarded",
+      "REGION": "Region",
+      "LOCALE_TYPE": "Locale",
+      "STABBR": "State"
+    }
+  },
+  "numeric_stats": {
+    "UGDS": {
+      "min": 2.0,
+      "p01": 22.0,
+      "median": 1082.0,
+      "p99": 32812.38000000005,
+      "max": 155088.0
+    },
+    "NUMBRANCH": {
+      "min": 1.0,
+      "p01": 1.0,
+      "median": 1.0,
+      "p99": 8.0,
+      "max": 31.0
+    },
+    "PPTUG_EF": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.1389,
+      "p99": 0.8984440000000002,
+      "max": 1.0
+    },
+    "UG25ABV": {
+      "min": 0.0005,
+      "p01": 0.0037,
+      "median": 0.2569,
+      "p99": 0.8999449999999993,
+      "max": 1.0
+    },
+    "PCTPELL": {
+      "min": 0.0,
+      "p01": 0.08012,
+      "median": 0.4023,
+      "p99": 0.9463520000000001,
+      "max": 1.0
+    },
+    "PCTFLOAN": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.3922,
+      "p99": 0.930752,
+      "max": 1.0
+    },
+    "UGDS_WOMEN": {
+      "min": 0.0,
+      "p01": 0.029872000000000017,
+      "median": 0.6112,
+      "p99": 1.0,
+      "max": 1.0
+    },
+    "UGDS_WHITE": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.4951,
+      "p99": 0.9604260000000006,
+      "max": 1.0
+    },
+    "UGDS_BLACK": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.0967,
+      "p99": 0.9055480000000004,
+      "max": 1.0
+    },
+    "UGDS_HISP": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.122,
+      "p99": 1.0,
+      "max": 1.0
+    },
+    "UGDS_ASIAN": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.0176,
+      "p99": 0.33898200000000106,
+      "max": 0.9457
+    },
+    "UGDS_NRA": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.006,
+      "p99": 0.26161600000000035,
+      "max": 0.949
+    },
+    "TUITION": {
+      "min": 544.0,
+      "p01": 1170.06,
+      "median": 14000.0,
+      "p99": 71361.12999999998,
+      "max": 91809.0
+    },
+    "COST_ATTEND": {
+      "min": 5397.0,
+      "p01": 9205.710000000001,
+      "median": 25600.0,
+      "p99": 90160.81,
+      "max": 95168.0
+    },
+    "NET_PRICE": {
+      "min": 36.0,
+      "p01": 1050.86,
+      "median": 16799.0,
+      "p99": 50031.08000000002,
+      "max": 82691.0
+    },
+    "TUITFTE": {
+      "min": 7.0,
+      "p01": 426.9,
+      "median": 9614.5,
+      "p99": 40215.499999999985,
+      "max": 141445.0
+    },
+    "INEXPFTE": {
+      "min": 94.0,
+      "p01": 1134.68,
+      "median": 7831.0,
+      "p99": 45125.64000000001,
+      "max": 240771.0
+    },
+    "INSTR_PER_TUITION": {
+      "min": 0.032093899560387204,
+      "p01": 0.10735594504630602,
+      "median": 0.8729175880878667,
+      "p99": 18.950419206672816,
+      "max": 1404.7142857142858
+    },
+    "AVGFACSAL": {
+      "min": 729.0,
+      "p01": 2699.98,
+      "median": 7782.0,
+      "p99": 16869.100000000017,
+      "max": 25048.0
+    },
+    "PFTFAC": {
+      "min": 0.0043,
+      "p01": 0.103015,
+      "median": 0.5917,
+      "p99": 1.0,
+      "max": 1.0
+    },
+    "STUFACR": {
+      "min": 1.0,
+      "p01": 4.0,
+      "median": 15.0,
+      "p99": 35.0,
+      "max": 191.0
+    },
+    "ADM_RATE_FILLED": {
+      "min": 0.0257,
+      "p01": 0.119935,
+      "median": 1.0,
+      "p99": 1.0,
+      "max": 1.0
+    },
+    "COMPLETION_RATE": {
+      "min": 0.037,
+      "p01": 0.13324,
+      "median": 0.5584,
+      "p99": 1.0,
+      "max": 1.0
+    },
+    "RETENTION_RATE": {
+      "min": 0.0,
+      "p01": 0.2,
+      "median": 0.7391,
+      "p99": 1.0,
+      "max": 1.0
+    },
+    "MD_FAMINC": {
+      "min": 334.0,
+      "p01": 6710.2,
+      "median": 25552.5,
+      "p99": 99632.80000000002,
+      "max": 123136.0
+    },
+    "FIRST_GEN": {
+      "min": 0.0909090909,
+      "p01": 0.131197136628,
+      "median": 0.4423157018,
+      "p99": 0.697708143048,
+      "max": 0.8509090909
+    },
+    "AGE_ENTRY": {
+      "min": 17.835820896,
+      "p01": 19.40332965476,
+      "median": 24.700516067000002,
+      "p99": 35.46224093815,
+      "max": 43.598870056
+    },
+    "MARRIED": {
+      "min": 0.0050460077,
+      "p01": 0.0096245567,
+      "median": 0.132231405,
+      "p99": 0.468940642848,
+      "max": 0.8153846154
+    },
+    "MEDIAN_HH_INC": {
+      "min": 16097.23,
+      "p01": 24596.8428,
+      "median": 57711.600000000006,
+      "p99": 88566.19559999999,
+      "max": 100870.75
+    },
+    "POVERTY_RATE": {
+      "min": 3.00999999046325,
+      "p01": 4.060699958801268,
+      "median": 8.734999656677239,
+      "p99": 39.48459991455074,
+      "max": 53.2400016784668
+    },
+    "UNEMP_RATE": {
+      "min": 1.85000002384185,
+      "p01": 2.25,
+      "median": 3.47000002861023,
+      "p99": 8.27719973564147,
+      "max": 14.9700002670288
+    },
+    "PCT_BA": {
+      "min": 3.0,
+      "p01": 6.308499979972838,
+      "median": 14.0050001144409,
+      "p99": 24.067499637603685,
+      "max": 29.3899993896484
+    },
+    "STEM_SHARE": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.06595,
+      "p99": 0.5931849999999975,
+      "max": 1.0001
+    },
+    "HEALTH_SHARE": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.11935000000000001,
+      "p99": 1.0,
+      "max": 1.0
+    },
+    "BUSINESS_SHARE": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.07544999999999999,
+      "p99": 0.4922649999999989,
+      "max": 1.0
+    },
+    "TRADES_SHARE": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.0032500000000000003,
+      "p99": 1.0,
+      "max": 1.0001
+    },
+    "ARTS_HUM_SHARE": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.07725,
+      "p99": 1.0,
+      "max": 1.0001
+    },
+    "EDU_SOCIAL_SHARE": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.0373,
+      "p99": 0.4450249999999999,
+      "max": 1.0
+    },
+    "PROGRAM_HHI": {
+      "min": 0.06661086,
+      "p01": 0.07927773299999999,
+      "median": 0.231082935,
+      "p99": 1.0,
+      "max": 1.0
+    },
+    "HBCU": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.0,
+      "p99": 1.0,
+      "max": 1.0
+    },
+    "DISTANCEONLY": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.0,
+      "p99": 0.0,
+      "max": 1.0
+    },
+    "OPEN_ADMISSION": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 1.0,
+      "p99": 1.0,
+      "max": 1.0
+    },
+    "SINGLE_SEX": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.0,
+      "p99": 1.0,
+      "max": 1.0
+    },
+    "MULTI_CAMPUS": {
+      "min": 0.0,
+      "p01": 0.0,
+      "median": 0.0,
+      "p99": 1.0,
+      "max": 1.0
+    },
+    "HIGHDEG": {
+      "min": 1.0,
+      "p01": 1.0,
+      "median": 2.0,
+      "p99": 4.0,
+      "max": 4.0
+    }
+  },
+  "categories": {
+    "CONTROL": [
+      "Private for-profit",
+      "Private nonprofit",
+      "Public"
+    ],
+    "PREDDEG": [
+      "Associate",
+      "Bachelor",
+      "Certificate"
+    ],
+    "REGION": [
+      "Far West",
+      "Great Lakes",
+      "Mid East",
+      "New England",
+      "Outlying Areas",
+      "Plains",
+      "Rocky Mountains",
+      "Southeast",
+      "Southwest",
+      "U.S. Service Schools"
+    ],
+    "LOCALE_TYPE": [
+      "City",
+      "Rural",
+      "Suburb",
+      "Town"
+    ],
+    "STABBR": [
+      "AK",
+      "AL",
+      "AR",
+      "AS",
+      "AZ",
+      "CA",
+      "CO",
+      "CT",
+      "DC",
+      "DE",
+      "FL",
+      "FM",
+      "GA",
+      "GU",
+      "HI",
+      "IA",
+      "ID",
+      "IL",
+      "IN",
+      "KS",
+      "KY",
+      "LA",
+      "MA",
+      "MD",
+      "ME",
+      "MH",
+      "MI",
+      "MN",
+      "MO",
+      "MP",
+      "MS",
+      "MT",
+      "NC",
+      "ND",
+      "NE",
+      "NH",
+      "NJ",
+      "NM",
+      "NV",
+      "NY",
+      "OH",
+      "OK",
+      "OR",
+      "PA",
+      "PR",
+      "RI",
+      "SC",
+      "SD",
+      "TN",
+      "TX",
+      "UT",
+      "VA",
+      "VI",
+      "VT",
+      "WA",
+      "WI",
+      "WV",
+      "WY"
+    ]
+  },
+  "category_modes": {
+    "CONTROL": "Public",
+    "PREDDEG": "Bachelor",
+    "REGION": "Southeast",
+    "LOCALE_TYPE": "City",
+    "STABBR": "CA"
+  },
+  "models": {
+    "Baseline (median)": {
+      "file": "baseline_median.joblib",
+      "best_params": {},
+      "cv": {},
+      "validation": {
+        "RMSE": 17364.120302383024,
+        "MAE": 12975.589915966386,
+        "MedAE": 10139.0,
+        "MAPE_%": 28.221158328872814,
+        "R2": -0.026359028285383168
+      },
+      "test": {
+        "RMSE": 19300.591951183967,
+        "MAE": 13695.239932885906,
+        "MedAE": 10147.5,
+        "MAPE_%": 28.72866956263891,
+        "R2": -0.031490656720222665
+      }
+    },
+    "ElasticNet": {
+      "file": "elasticnet.joblib",
+      "best_params": {
+        "alpha": 3e-05,
+        "l1_ratio": 1.0
+      },
+      "cv": {
+        "cv_RMSE": 7715.83341683591,
+        "cv_RMSE_std": 797.3174569431976,
+        "cv_MAE": 4998.304037658097,
+        "cv_R2": 0.8077709287697752
+      },
+      "validation": {
+        "RMSE": 6446.447646478594,
+        "MAE": 4584.586170006604,
+        "MedAE": 3127.4462402068675,
+        "MAPE_%": 9.859023759961232,
+        "R2": 0.858539673953195
+      },
+      "test": {
+        "RMSE": 7968.67194394542,
+        "MAE": 5140.324169112449,
+        "MedAE": 3505.33934022468,
+        "MAPE_%": 10.275676286052624,
+        "R2": 0.8241688014561199
+      }
+    },
+    "Random Forest": {
+      "file": "random_forest.joblib",
+      "best_params": {
+        "n_estimators": 500,
+        "min_samples_leaf": 1,
+        "max_features": 0.5,
+        "max_depth": 24
+      },
+      "cv": {
+        "cv_RMSE": 7314.674806481086,
+        "cv_RMSE_std": 763.5765248751677,
+        "cv_MAE": 4514.78065563692,
+        "cv_R2": 0.8266683974372435
+      },
+      "validation": {
+        "RMSE": 6421.529150167079,
+        "MAE": 4235.245051677892,
+        "MedAE": 2712.7324792552936,
+        "MAPE_%": 8.906555924596612,
+        "R2": 0.859631179219628
+      },
+      "test": {
+        "RMSE": 6886.321334901968,
+        "MAE": 4303.13556238817,
+        "MedAE": 2611.94219467272,
+        "MAPE_%": 8.564913708429634,
+        "R2": 0.8686897558624411
+      }
+    },
+    "Hist Gradient Boosting": {
+      "file": "hist_gradient_boosting.joblib",
+      "best_params": {
+        "l2_regularization": 1.21302,
+        "learning_rate": 0.05363,
+        "max_features": 0.5,
+        "max_iter": 356,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 10
+      },
+      "cv": {
+        "cv_RMSE": 6812.333136387044,
+        "cv_RMSE_std": 710.5273410786493,
+        "cv_MAE": 4294.855987269019,
+        "cv_R2": 0.8498505736981331
+      },
+      "validation": {
+        "RMSE": 5971.631174785019,
+        "MAE": 3976.5585829945862,
+        "MedAE": 2730.4958626724692,
+        "MAPE_%": 8.536766185125469,
+        "R2": 0.878610900984783
+      },
+      "test": {
+        "RMSE": 6516.16646410745,
+        "MAE": 4097.718501415732,
+        "MedAE": 2698.2620031363113,
+        "MAPE_%": 8.169865638008996,
+        "R2": 0.8824267884791028
+      }
+    },
+    "SVR (RBF)": {
+      "file": "svr_rbf.joblib",
+      "best_params": {
+        "C": 9.71778,
+        "epsilon": 0.06923,
+        "gamma": 0.00363
+      },
+      "cv": {
+        "cv_RMSE": 6825.118421475809,
+        "cv_RMSE_std": 759.1495505401433,
+        "cv_MAE": 4314.323437906142,
+        "cv_R2": 0.8490596366048824
+      },
+      "validation": {
+        "RMSE": 5382.892406905004,
+        "MAE": 3709.082070480727,
+        "MedAE": 2471.284800037567,
+        "MAPE_%": 8.054026962548875,
+        "R2": 0.9013663435290709
+      },
+      "test": {
+        "RMSE": 6360.37233953181,
+        "MAE": 3972.4213152752013,
+        "MedAE": 2555.727442307976,
+        "MAPE_%": 8.073210586351424,
+        "R2": 0.8879816630431088
+      }
+    }
+  },
+  "best_model": {
+    "name": "SVR (RBF)",
+    "file": "final_model.joblib",
+    "refit_on": "train + validation",
+    "test": {
+      "RMSE": 6434.546570950707,
+      "MAE": 4006.563089148421,
+      "MedAE": 2485.752549717032,
+      "MAPE_%": 8.135804110892595,
+      "R2": 0.8853537279582888
+    }
+  },
+  "versions": {
+    "python": "3.9.6",
+    "pandas": "2.3.3",
+    "numpy": "2.0.2",
+    "scikit-learn": "1.6.1",
+    "joblib": "1.5.3"
+  }
+}

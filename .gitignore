@@ -13,3 +13,6 @@ data/Most-Recent-Cohorts-Institution.csv
 
 # Archives
 *.zip
+
+# Large saved model (34 MB). It is created again when the notebook is run.
+models/random_forest.joblib

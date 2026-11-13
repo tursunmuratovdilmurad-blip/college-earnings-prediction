@@ -1,0 +1,22 @@
+step,rule,affected,unit,rows_remaining
+0,Raw table ('PS' already converted to NaN),4311,cells set to NaN,6272
+1,Remove exact duplicate rows / duplicated UNITID,0,rows removed,6272
+2,Remove rows without a target (missing or privacy-suppressed earnings),983,rows removed,5289
+3,Remove institutions that are no longer operating,62,rows removed,5227
+4,Keep predominantly certificate / associate / bachelor institutions,411,rows removed,4816
+5,Remove rows whose earnings are based on fewer than 30 former students,85,rows removed,4731
+6,De-duplicate branch campuses: one row per OPEID6 (main campus preferred),764,rows removed,3967
+7,Negative locale code -> NaN,2,rows repaired,3967
+8,UGDS = 0 -> NaN,4,rows repaired,3967
+9,INEXPFTE <= 0 -> NaN,1,rows repaired,3967
+9,TUITFTE <= 0 -> NaN,4,rows repaired,3967
+9,TUITIONFEE_IN <= 0 -> NaN,1,rows repaired,3967
+9,MD_FAMINC <= 0 -> NaN,57,rows repaired,3967
+11,Admission rate = 0 -> NaN,2,rows repaired,3967
+11,4-year completion rate = 0 -> NaN,9,rows repaired,3967
+11,Less-than-4-year completion rate = 0 -> NaN,8,rows repaired,3967
+12,Race/ethnicity shares do not sum to 1 -> NaN,4,rows repaired,3967
+12,Men + women shares do not sum to 1 -> NaN,4,rows repaired,3967
+12,Programme shares do not sum to 1 -> NaN,5,rows repaired,3967
+13,HIGHDEG < PREDDEG -> HIGHDEG = PREDDEG,6,rows repaired,3967
+14,WOMENONLY = 1 but UGDS_MEN > 5 % -> flag set to 0,3,rows repaired,3967
