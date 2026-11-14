@@ -11,7 +11,7 @@ The data comes from the U.S. Department of Education
 | Path | Contents |
 |---|---|
 | `notebook.ipynb` | The full pipeline: loading, EDA, cleaning, feature engineering, training and evaluation |
-| `app.py`, `pages/` | The Streamlit app |
+| `app.py`, `app_pages/` | The Streamlit app (entry file and one file per page) |
 | `src/` | A small custom transformer used by the pipeline, and shared helpers for the app |
 | `data/` | Processed tables and a note on how to get the raw dataset ([data/README.md](data/README.md)) |
 | `models/` | Trained models and `metadata.json` with their settings and scores |
