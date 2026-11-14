@@ -11,10 +11,23 @@ The data comes from the U.S. Department of Education
 | Path | Contents |
 |---|---|
 | `notebook.ipynb` | The full pipeline: loading, EDA, cleaning, feature engineering, training and evaluation |
-| `src/` | A small custom transformer used by the pipeline |
+| `app.py`, `pages/` | The Streamlit app |
+| `src/` | A small custom transformer used by the pipeline, and shared helpers for the app |
 | `data/` | Processed tables and a note on how to get the raw dataset ([data/README.md](data/README.md)) |
 | `models/` | Trained models and `metadata.json` with their settings and scores |
 | `reports/` | Result tables and figures produced by the notebook |
+
+## Getting started
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+The app works with the files already in this repository. To re-run the notebook you also need the raw
+dataset, see [data/README.md](data/README.md).
 
 ## Status
 
