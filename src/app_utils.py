@@ -20,6 +20,9 @@ PREDDEG_MAP = {0: "Not classified", 1: "Certificate", 2: "Associate", 3: "Bachel
 REGION_MAP = {0: "U.S. Service Schools", 1: "New England", 2: "Mid East", 3: "Great Lakes", 4: "Plains",
               5: "Southeast", 6: "Southwest", 7: "Rocky Mountains", 8: "Far West", 9: "Outlying Areas"}
 
+# One colour per type of ownership, the same in every chart
+OWNERSHIP_COLORS = {"Public": "#2a78d6", "Private nonprofit": "#1baf7a", "Private for-profit": "#eb7a2d"}
+
 # Plain-language names for raw columns that are not model features
 RAW_LABELS = {
     "UNITID": "College ID (one per campus)", "OPEID6": "Institution ID used for federal aid",
@@ -84,6 +87,11 @@ def column_label(column: str) -> str:
     if column.startswith("PCIP"):
         return f"Share of awards in subject group {column[4:]}"
     return ""
+
+
+def show_chart(fig) -> None:
+    """Draw a Plotly chart across the full width of its container."""
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def usd(value: float) -> str:
