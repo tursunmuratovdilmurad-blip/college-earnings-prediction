@@ -1,10 +1,11 @@
-"""Model comparison page: the models, their scores on each data split and how they were tuned."""
+"""Model comparison page: the models, their scores, how they were tuned and where they go wrong."""
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from src.app_utils import load_metadata, load_report_table, show_chart, usd
+from src.app_utils import OWNERSHIP_COLORS, column_label, load_metadata, load_report_table, show_chart, usd
 
 meta = load_metadata()
 BEST = meta["best_model"]["name"]
@@ -62,7 +63,8 @@ st.write(
     f"The model chosen in the end is **{BEST}**."
 )
 
-tab_models, tab_scores, tab_tuning = st.tabs(["The models", "Scores", "Tuning"])
+tab_models, tab_scores, tab_tuning, tab_pred, tab_groups, tab_drivers = st.tabs(
+    ["The models", "Scores", "Tuning", "Predictions", "Errors by group", "What drives the predictions"])
 
 # ── Tab 1: what the models are ───────────────────────────────────────────────
 with tab_models:
@@ -143,10 +145,10 @@ with tab_tuning:
         "They were tested with 5-fold cross-validation on the training set: the data is cut into five parts, the "
         "model trains on four and is checked on the fifth, and every part gets a turn as the check."
     )
-    model = st.selectbox("Model", MODELS, index=MODELS.index(BEST), key="tuning_model")
-    summary = cv_summary.loc[model]
-    best_params = meta["models"][model]["best_params"]
-    if model == "ElasticNet":
+    tuned = st.selectbox("Model", MODELS, index=MODELS.index(BEST), key="tuning_model")
+    summary = cv_summary.loc[tuned]
+    best_params = meta["models"][tuned]["best_params"]
+    if tuned == "ElasticNet":
         st.write("Search method: **grid search**. This model has only two settings, so every combination was tried.")
     else:
         st.write("Search method: **random search**. This model has several settings, and a full grid would need "
@@ -160,7 +162,7 @@ with tab_tuning:
 
     st.subheader("Settings and the best values found")
     rows = []
-    for name, (meaning, searched, _) in PARAMS[model].items():
+    for name, (meaning, searched, _) in PARAMS[tuned].items():
         value = best_params.get(name)
         rows.append({"Setting": name, "What it controls": meaning, "Range searched": searched,
                      "Best value": "no limit" if value is None else str(value)})
@@ -169,11 +171,11 @@ with tab_tuning:
     st.subheader("How much does each setting matter?")
     st.write("Each dot is one combination of settings that was tried. A flat cloud means the setting hardly "
              "matters. A clear slope shows where the good values are.")
-    results = load_report_table(f"cv_results_{SLUG[model]}.csv")
-    setting = st.selectbox("Setting", list(PARAMS[model]), key="tuning_setting",
-                           format_func=lambda p: f"{p}: {PARAMS[model][p][0]}")
+    results = load_report_table(f"cv_results_{SLUG[tuned]}.csv")
+    setting = st.selectbox("Setting", list(PARAMS[tuned]), key="tuning_setting",
+                           format_func=lambda p, names=PARAMS[tuned]: f"{p}: {names[p][0]}")
     column = f"param_regressor__model__{setting}"
-    use_log = PARAMS[model][setting][2]
+    use_log = PARAMS[tuned][setting][2]
     values = results[column] if use_log else results[column].fillna("no limit").astype(str)
     points = pd.concat([
         pd.DataFrame({setting: values, "RMSE (USD)": -results["mean_test_rmse"], "Checked on": "Held-out folds"}),
@@ -191,3 +193,131 @@ with tab_tuning:
     show_chart(fig)
     st.caption("Blue dots are the errors on data the model did not train on. Orange dots are the errors on its own "
                "training data. A large gap between them means the model is memorising.")
+
+# ── Shared data for the evaluation tabs ──────────────────────────────────────
+predictions = load_report_table("test_predictions.csv")
+
+
+def results_for(model: str) -> pd.DataFrame:
+    """Actual and predicted earnings of the test colleges for one model, with the error of each college."""
+    out = predictions[["INSTNM", "STABBR", "CONTROL", "PREDDEG", "actual"]].copy()
+    out["predicted"] = predictions[f"pred_{model}"]
+    out["error"] = out["actual"] - out["predicted"]
+    out["error %"] = out["error"].abs() / out["actual"] * 100
+    return out
+
+
+# ── Tab 4: predicted against actual ──────────────────────────────────────────
+with tab_pred:
+    st.write(f"These charts use the {len(predictions):,} test colleges, which no model saw during training.")
+    shown = st.selectbox("Model", MODELS, index=MODELS.index(BEST), key="pred_model")
+    res = results_for(shown)
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Within 10% of the true figure", f"{(res['error %'] <= 10).mean():.0%}")
+    col2.metric("Within 20%", f"{(res['error %'] <= 20).mean():.0%}")
+    col3.metric("Average error", usd(res["error"].abs().mean()))
+    col4.metric("Largest miss", usd(res["error"].abs().max()))
+
+    st.subheader("Predicted against actual earnings")
+    st.write("Each dot is one college. A perfect model would put every dot on the dashed line. Dots below the line "
+             "are colleges the model predicted too low.")
+    low, high = res["actual"].min() * 0.9, res["actual"].max() * 1.03
+    fig = px.scatter(res, x="actual", y="predicted", color="CONTROL", hover_name="INSTNM", opacity=0.6,
+                     color_discrete_map=OWNERSHIP_COLORS, category_orders={"CONTROL": list(OWNERSHIP_COLORS)},
+                     labels={"actual": "Actual earnings (USD)", "predicted": "Predicted earnings (USD)",
+                             "CONTROL": "Ownership"})
+    fig.add_trace(go.Scatter(x=[low, high], y=[low, high], mode="lines", name="Perfect prediction",
+                             line=dict(color="grey", dash="dash")))
+    fig.update_layout(margin=dict(t=20), height=480, legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
+    show_chart(fig)
+
+    st.subheader("Errors")
+    left, right = st.columns(2)
+    with left:
+        st.write("Error of each college against its prediction. A good model shows a flat cloud around zero.")
+        fig = px.scatter(res, x="predicted", y="error", hover_name="INSTNM", opacity=0.55,
+                         color_discrete_sequence=[COLORS[shown]],
+                         labels={"predicted": "Predicted earnings (USD)", "error": "Actual minus predicted (USD)"})
+        fig.add_hline(y=0, line_dash="dash", line_color="grey")
+        fig.update_layout(margin=dict(t=20), height=380)
+        show_chart(fig)
+    with right:
+        st.write("How the errors are spread. Most should be small, and the two sides should be about equal.")
+        fig = px.histogram(res, x="error", nbins=60, color_discrete_sequence=[COLORS[shown]],
+                           labels={"error": "Actual minus predicted (USD)"})
+        fig.add_vline(x=0, line_dash="dash", line_color="grey")
+        fig.update_layout(margin=dict(t=20), height=380, yaxis_title="Number of colleges")
+        show_chart(fig)
+
+# ── Tab 5: errors by group ───────────────────────────────────────────────────
+with tab_groups:
+    st.write("One overall score can hide groups where a model does badly. This tab splits the test errors.")
+    left, right = st.columns(2)
+    picked = left.selectbox("Model", MODELS, index=MODELS.index(BEST), key="group_model")
+    group_names = {"Ownership": "CONTROL", "Main degree awarded": "PREDDEG"}
+    group_label = right.selectbox("Split by", list(group_names), key="group_split")
+    res = results_for(picked)
+    group_col = group_names[group_label]
+
+    grouped = res.groupby(group_col).agg(Colleges=("actual", "size"), MAE=("error", lambda e: e.abs().mean()),
+                                         MAPE=("error %", "mean"), Bias=("error", "mean")).sort_values("MAPE")
+    fig = px.bar(grouped.reset_index(), x=group_col, y="MAPE", color=group_col,
+                 color_discrete_map=OWNERSHIP_COLORS if group_col == "CONTROL" else None,
+                 labels={group_col: "", "MAPE": "Average error (%)"})
+    fig.update_layout(showlegend=False, margin=dict(t=20), height=340)
+    show_chart(fig)
+    st.dataframe(grouped.rename(columns={"MAE": "Average error (USD)", "MAPE": "Average error (%)",
+                                         "Bias": "Average of actual minus predicted (USD)"})
+                 .style.format({"Average error (USD)": "{:,.0f}", "Average error (%)": "{:.1f}",
+                                "Average of actual minus predicted (USD)": "{:+,.0f}"}), width="stretch")
+    st.caption("A positive value in the last column means the model predicts too low for that group on average.")
+
+    st.subheader("Low earners and high earners")
+    st.write("The test colleges are sorted by their true earnings and cut into ten equal groups. The bars show "
+             "whether the model predicts too low or too high in each group.")
+    decile = pd.qcut(res["actual"], 10, labels=[f"{i}" for i in range(1, 11)])
+    bias = res.groupby(decile, observed=True)["error"].mean()
+    fig = px.bar(x=bias.index.astype(str), y=bias.values, color=np.where(bias.values >= 0, "Predicted too low",
+                                                                         "Predicted too high"),
+                 color_discrete_map={"Predicted too low": "#2a78d6", "Predicted too high": "#e34a4a"},
+                 labels={"x": "Group (1 = lowest earnings, 10 = highest)", "y": "Average of actual minus predicted (USD)",
+                         "color": ""})
+    fig.update_layout(margin=dict(t=20), height=360)
+    show_chart(fig)
+    st.caption("Every model predicts too low for the highest earners. There are few such colleges to learn from, "
+               "and what makes them special is not in the data.")
+
+    st.subheader("Largest errors")
+    worst = res.reindex(res["error"].abs().sort_values(ascending=False).index).head(10)
+    worst = worst.rename(columns={"INSTNM": "College", "STABBR": "State", "CONTROL": "Ownership",
+                                  "PREDDEG": "Main degree", "actual": "Actual (USD)", "predicted": "Predicted (USD)",
+                                  "error": "Error (USD)"}).drop(columns="error %")
+    st.dataframe(worst.style.format({"Actual (USD)": "{:,.0f}", "Predicted (USD)": "{:,.0f}",
+                                     "Error (USD)": "{:+,.0f}"}), hide_index=True, width="stretch")
+
+# ── Tab 6: what drives the predictions ───────────────────────────────────────
+with tab_drivers:
+    st.write(
+        f"To see what {BEST} relies on, one feature at a time was shuffled and the model was scored again. "
+        "If the error goes up a lot, the model depends on that feature. This was measured on the validation set, "
+        "not on the training data."
+    )
+    importance = load_report_table("permutation_importance.csv")
+    count = st.slider("Number of features to show", 5, len(importance), 15, key="driver_count")
+    top = importance.head(count).iloc[::-1]
+    fig = go.Figure(go.Bar(x=top["rmse_increase"], y=[column_label(f) or f for f in top["feature"]], orientation="h",
+                           marker_color="#2a78d6", error_x=dict(type="data", array=top["std"], color="#8d8d8d")))
+    fig.update_layout(margin=dict(t=20), height=max(320, 26 * count + 100),
+                      xaxis_title="Increase in RMSE when the feature is shuffled (USD)")
+    show_chart(fig)
+    first, second = importance.iloc[0], importance.iloc[1]
+    st.info(
+        f"{column_label(first['feature'])} is far ahead of everything else: shuffling it adds "
+        f"{first['rmse_increase'] / second['rmse_increase']:.1f} times as much error as the next feature. The model "
+        "predicts earnings mostly from who enrols at a college, and only partly from what the college does. "
+        "A high prediction is not proof of good teaching."
+    )
+    st.caption("When two features carry similar information they share the credit, so a low bar does not prove a "
+               "feature is useless.")
+
