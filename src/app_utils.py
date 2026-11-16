@@ -121,6 +121,16 @@ def numeric_preprocessing_details() -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("feature")
 
 
+@st.cache_data
+def most_typical_college() -> int:
+    """Row label (in the cleaned table) of the real college closest to the average on every number feature."""
+    before, after = load_fit_data()
+    complete = before.notna().all(axis=1)
+    numeric = load_metadata()["features"]["numeric"]
+    distance = (after.loc[complete, numeric] ** 2).sum(axis=1)     # scaled features: 0 means exactly average
+    return int(distance.idxmin())
+
+
 def load_preprocessor():
     """The fitted preprocessing step of the final model (imputation, capping, scaling, encoding)."""
     return load_final_model().regressor_.named_steps["prep"]

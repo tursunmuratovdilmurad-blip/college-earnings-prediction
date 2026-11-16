@@ -11,6 +11,7 @@ pages = [
     st.Page("app_pages/data_overview.py", title="Data overview"),
     st.Page("app_pages/preprocessing.py", title="Preprocessing"),
     st.Page("app_pages/models.py", title="Model comparison"),
+    st.Page("app_pages/predict.py", title="Predict earnings"),
 ]
 
 st.navigation(pages).run()
