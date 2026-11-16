@@ -224,9 +224,13 @@ with tab_scatter:
         fig.update_traces(marker=dict(size=5))
         fig.update_layout(margin=dict(t=30), legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
         show_chart(fig)
-        rho = data["x"].corr(data["y"], method="spearman")
-        st.caption(f"Spearman correlation: {rho:+.2f}, from {len(data):,} colleges. Values near +1 or -1 mean a "
-                   "strong link, and values near 0 mean no clear link.")
+        if data["x"].nunique() < 2 or data["y"].nunique() < 2:
+            st.caption("The correlation cannot be worked out here, because one of the two columns has the same "
+                       "value for every college shown.")
+        else:
+            rho = data["x"].corr(data["y"], method="spearman")
+            st.caption(f"Spearman correlation: {rho:+.2f}, from {len(data):,} colleges. Values near +1 or -1 mean "
+                       "a strong link, and values near 0 mean no clear link.")
 
 # ── Tab 7: correlation matrix ────────────────────────────────────────────────
 with tab_corr:
@@ -236,8 +240,13 @@ with tab_corr:
     picked = left.multiselect("Columns", number_columns, default=key_columns, format_func=name_of, key="corr_columns")
     method = right.radio("Method", ["Spearman", "Pearson"], key="corr_method",
                          help="Spearman works on ranks, so extreme values and curved links do not distort it.")
+    # a column with one single value has no correlation with anything, so it is left out
+    flat = [c for c in picked if numeric[c].nunique() < 2]
+    picked = [c for c in picked if c not in flat]
+    if flat:
+        st.caption("Left out because every college shown has the same value (or no value): " + ", ".join(flat) + ".")
     if len(picked) < 2:
-        st.info("Pick at least two columns.")
+        st.info("Pick at least two columns that have more than one value.")
     else:
         corr = numeric[picked].corr(method=method.lower())
         # full names down the side, short column codes along the bottom so the labels stay readable
