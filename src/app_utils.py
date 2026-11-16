@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 import joblib
+import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -75,6 +76,49 @@ def load_report_table(name: str, **kwargs) -> pd.DataFrame:
 def load_final_model():
     """The final model (preprocessing + SVR) used for live predictions."""
     return joblib.load(MODELS_DIR / load_metadata()["best_model"]["file"])
+
+
+@st.cache_data
+def load_fit_data():
+    """The colleges the final model was trained on (training + validation sets).
+
+    Returns two tables with the same rows: the features before preprocessing, and the same
+    features after the saved pipeline has imputed, capped, scaled and encoded them.
+    """
+    table = load_model_table()
+    rows = table[table["SPLIT"].isin(["train", "validation"])]
+    before = rows[load_metadata()["features"]["all"]]
+    prep = load_final_model().regressor_.named_steps["prep"]
+    after = pd.DataFrame(prep.transform(before), columns=prep.get_feature_names_out(), index=before.index)
+    return before, after
+
+
+@st.cache_data
+def numeric_preprocessing_details() -> pd.DataFrame:
+    """What the saved pipeline does to each numeric feature, in the feature's original units."""
+    prep = load_final_model().regressor_.named_steps["prep"]
+    before, _ = load_fit_data()
+    rows = []
+    for name, pipeline, columns in prep.transformers_:
+        if name not in ("log_num", "num"):
+            continue
+        winsor = pipeline.named_steps["winsor"]
+        uses_log = name == "log_num"
+        to_original = np.expm1 if uses_log else (lambda v: v)
+        for i, column in enumerate(columns):
+            values = before[column]
+            low, high = to_original(winsor.lower_bounds_[i]), to_original(winsor.upper_bounds_[i])
+            rows.append({
+                "feature": column,
+                "log transform": uses_log,
+                "missing": int(values.isna().sum()),
+                "missing %": values.isna().mean() * 100,
+                "filled with (median)": values.median(),
+                "lower cap": low,
+                "upper cap": high,
+                "values capped": int(((values < low - 1e-9) | (values > high + 1e-9)).sum()),
+            })
+    return pd.DataFrame(rows).set_index("feature")
 
 
 def column_label(column: str) -> str:
