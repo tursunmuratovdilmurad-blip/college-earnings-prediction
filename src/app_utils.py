@@ -121,6 +121,25 @@ def numeric_preprocessing_details() -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("feature")
 
 
+def load_preprocessor():
+    """The fitted preprocessing step of the final model (imputation, capping, scaling, encoding)."""
+    return load_final_model().regressor_.named_steps["prep"]
+
+
+@st.cache_data
+def load_state_encoding() -> pd.DataFrame:
+    """The number each state is replaced with by target encoding, next to the state's real figures."""
+    encoder = load_preprocessor().named_transformers_["tgt"].named_steps["encode"]
+    table = load_model_table()
+    rows = table[table["SPLIT"].isin(["train", "validation"])]
+    real = rows.groupby("STABBR")[TARGET].agg(["count", "median"])
+    out = pd.DataFrame({"State": encoder.categories_[0],
+                        "Value used (USD)": np.exp(encoder.encodings_[0])})   # the model works on log earnings
+    out["Colleges"] = out["State"].map(real["count"]).fillna(0).astype(int)
+    out["Median earnings (USD)"] = out["State"].map(real["median"])
+    return out, float(np.exp(encoder.target_mean_))
+
+
 def column_label(column: str) -> str:
     """Plain-language name of a column, or an empty string if there is none."""
     labels = load_metadata()["features"]["labels"]
