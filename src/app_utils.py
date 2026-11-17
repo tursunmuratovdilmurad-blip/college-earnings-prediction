@@ -122,6 +122,15 @@ def numeric_preprocessing_details() -> pd.DataFrame:
 
 
 @st.cache_data
+def load_all_preprocessed() -> pd.DataFrame:
+    """Every college in the cleaned table after preprocessing, used to find colleges that are alike."""
+    table = load_model_table()
+    prep = load_final_model().regressor_.named_steps["prep"]
+    features = load_metadata()["features"]["all"]
+    return pd.DataFrame(prep.transform(table[features]), columns=prep.get_feature_names_out(), index=table.index)
+
+
+@st.cache_data
 def most_typical_college() -> int:
     """Row label (in the cleaned table) of the real college closest to the average on every number feature."""
     before, after = load_fit_data()

@@ -2,10 +2,12 @@
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
-from src.app_utils import (TARGET, column_label, load_final_model, load_metadata, load_model_table,
-                           load_report_table, most_typical_college, show_chart, usd, usd_md)
+from src.app_utils import (TARGET, column_label, load_all_preprocessed, load_final_model, load_metadata,
+                           load_model_table, load_preprocessor, load_report_table, most_typical_college,
+                           show_chart, usd, usd_md)
 
 meta = load_metadata()
 table = load_model_table()
@@ -42,6 +44,33 @@ def typical_values() -> dict:
     values = {f: STATS[f]["median"] for f in STATS}
     values.update(meta["category_modes"])
     return values
+
+
+MONEY = ["TUITION", "COST_ATTEND", "NET_PRICE", "TUITFTE", "INEXPFTE", "AVGFACSAL", "MD_FAMINC", "MEDIAN_HH_INC"]
+
+
+def show_value(feature: str, value) -> str:
+    """A feature value written the way a person would read it."""
+    if isinstance(value, str):
+        return value
+    if feature in SHARES:
+        return f"{value * 100:.1f}%"
+    if feature in PERCENTS:
+        return f"{value:.1f}%"
+    if feature in MONEY:
+        return f"${value:,.0f}"
+    if feature in YES_NO or feature == "MULTI_CAMPUS":
+        return "yes" if value == 1 else "no"
+    if feature == "HIGHDEG":
+        return HIGHDEG_NAMES[int(value)]
+    return f"{value:,.2f}" if abs(value) < 100 else f"{value:,.0f}"
+
+
+def as_rows(records: list) -> pd.DataFrame:
+    """Turn a list of feature dictionaries into the table the model expects."""
+    frame = pd.DataFrame(records)[FEATURES]
+    frame[["HIGHDEG", "NUMBRANCH"]] = frame[["HIGHDEG", "NUMBRANCH"]].astype(int)
+    return frame
 
 
 edited = set()                                                  # features the user has changed on this run
@@ -140,8 +169,7 @@ if values["OPEN_ADMISSION"] == 1:
 values["INSTR_PER_TUITION"] = values["INEXPFTE"] / values["TUITFTE"] if values["TUITFTE"] > 0 else base["INSTR_PER_TUITION"]
 
 # ── Prediction ───────────────────────────────────────────────────────────────
-row = pd.DataFrame([values])[FEATURES]
-row[["HIGHDEG", "NUMBRANCH"]] = row[["HIGHDEG", "NUMBRANCH"]].astype(int)
+row = as_rows([values])
 prediction = float(model.predict(row)[0])
 
 tests = load_report_table("test_predictions.csv")
@@ -191,6 +219,101 @@ with result_box:
     if missing_in_base:
         st.caption("This college has no published value for: " + ", ".join(column_label(f) for f in missing_in_base)
                    + ". The typical value is shown instead.")
+
+# ── Understand the prediction ────────────────────────────────────────────────
+st.subheader("Understand the prediction")
+tab_why, tab_similar, tab_whatif = st.tabs(["What pushes it up or down", "Similar colleges", "What if"])
+
+with tab_why:
+    st.write(
+        "For each feature, the model is asked what it would predict for the same college with the typical "
+        "value of that one feature. The difference shows how much this college's own value pushes the "
+        "prediction up or down."
+    )
+    typical = typical_values()
+    variants = as_rows([dict(values, **{feature: typical[feature]}) for feature in FEATURES])
+    effect = prediction - model.predict(variants)
+    pushes = pd.DataFrame({"Feature": [column_label(f) for f in FEATURES],
+                           "This college": [show_value(f, values[f]) for f in FEATURES],
+                           "Typical college": [show_value(f, typical[f]) for f in FEATURES],
+                           "Effect on the prediction (USD)": effect})
+    pushes = pushes.reindex(pushes["Effect on the prediction (USD)"].abs().sort_values(ascending=False).index)
+    top = pushes.head(12).iloc[::-1]
+    fig = go.Figure(go.Bar(
+        x=top["Effect on the prediction (USD)"], y=top["Feature"] + " = " + top["This college"], orientation="h",
+        marker_color=np.where(top["Effect on the prediction (USD)"] >= 0, "#2a78d6", "#e34a4a")))
+    fig.update_layout(margin=dict(t=20), height=440, xaxis_title="Effect on the predicted earnings (USD)")
+    show_chart(fig)
+    st.caption("Blue bars raise the prediction and red bars lower it, compared with the typical value. The effects "
+               "do not add up exactly to the prediction, because features also work together.")
+    with st.expander("All features"):
+        st.dataframe(pushes.style.format({"Effect on the prediction (USD)": "{:+,.0f}"}), hide_index=True,
+                     width="stretch")
+
+with tab_similar:
+    st.write("These are the real colleges most like the one described above, after all features are put on the "
+             "same scale. If the prediction is sensible, their real earnings should be close to it.")
+    count = st.slider("Number of similar colleges", 5, 25, 10, key="similar_count")
+    everyone = load_all_preprocessed()
+    described = load_preprocessor().transform(row)[0]
+    distance = np.sqrt(((everyone - described) ** 2).sum(axis=1))
+    if not changed:
+        distance = distance.drop(start)                         # do not compare the starting college with itself
+    nearest = distance.nsmallest(count)
+    similar = table.loc[nearest.index, ["INSTNM", "STABBR", "CONTROL", "PREDDEG", TARGET]].copy()
+    similar["Difference"] = nearest.values
+    similar_median = float(similar[TARGET].median())
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("This prediction", usd(prediction))
+    col2.metric("Median of the similar colleges", usd(similar_median))
+    col3.metric("Gap", usd(abs(prediction - similar_median)))
+
+    chart = similar.sort_values(TARGET)
+    fig = px.bar(chart, x=TARGET, y="INSTNM", orientation="h", color_discrete_sequence=["#9ec5f4"],
+                 labels={TARGET: "Real earnings after 10 years (USD)", "INSTNM": ""})
+    fig.add_vline(x=prediction, line_color="#2a78d6", line_width=3, annotation_text="prediction")
+    fig.update_layout(margin=dict(t=30), height=max(320, 28 * count + 100))
+    show_chart(fig)
+    similar = similar.rename(columns={"INSTNM": "College", "STABBR": "State", "CONTROL": "Ownership",
+                                      "PREDDEG": "Main degree", TARGET: "Real earnings (USD)"})
+    st.dataframe(similar.style.format({"Real earnings (USD)": "{:,.0f}", "Difference": "{:.2f}"}),
+                 hide_index=True, width="stretch")
+    st.caption("Difference is the distance between two colleges across all features. Smaller means more alike.")
+
+with tab_whatif:
+    st.write("Change one feature across its usual range while everything else stays as described above, and "
+             "see how the prediction moves.")
+    number_inputs = [f for group in GROUPS.values() for f in group]
+    if values["OPEN_ADMISSION"] == 1:
+        # an open-admission college admits everyone, so its admission rate cannot be varied on its own
+        number_inputs.remove("ADM_RATE_FILLED")
+    feature = st.selectbox("Feature to change", number_inputs, index=number_inputs.index("MD_FAMINC"),
+                           format_func=lambda f: f"{f}: {column_label(f)}", key="whatif_feature")
+    grid = np.linspace(STATS[feature]["p01"], STATS[feature]["p99"], 40)
+    records = []
+    for point in grid:
+        record = dict(values, **{feature: float(point)})
+        if feature in ("INEXPFTE", "TUITFTE") and record["TUITFTE"] > 0:
+            record["INSTR_PER_TUITION"] = record["INEXPFTE"] / record["TUITFTE"]
+        records.append(record)
+    curve = model.predict(as_rows(records))
+    scale = 100 if feature in SHARES else 1
+    unit = " (%)" if feature in SHARES else ""
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=grid * scale, y=curve, mode="lines", line=dict(color="#2a78d6", width=3),
+                             name="Prediction"))
+    fig.add_trace(go.Scatter(x=[values[feature] * scale], y=[prediction], mode="markers", name="This college",
+                             marker=dict(color="#eb7a2d", size=13)))
+    fig.update_layout(margin=dict(t=20), height=400, xaxis_title=column_label(feature) + unit,
+                      yaxis_title="Predicted earnings (USD)",
+                      legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
+    show_chart(fig)
+    st.caption(
+        f"Across the usual range of this feature the prediction goes from {usd(curve.min())} to {usd(curve.max())}. "
+        "This shows what the model expects for colleges with different values. It is not proof that changing "
+        "the value at one college would change what its students earn."
+    )
 
 st.caption(
     f"Model: {BEST}. The prediction is for a whole college, not for one student, and it shows what colleges with "
