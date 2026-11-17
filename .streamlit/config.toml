@@ -1,0 +1,4 @@
+[theme]
+# Same blue as the charts, so sliders, tabs and buttons match them.
+# Light or dark mode still follows each visitor's own setting.
+primaryColor = "#2a78d6"
