@@ -1,50 +1,126 @@
 # College Earnings Prediction
 
-Predicting how much the former students of a U.S. college earn ten years after they enrolled,
-using facts about the college that are known much earlier.
+How much do the former students of a U.S. college earn ten years after they started? The government
+publishes this number, but it arrives ten years late and is missing for many colleges. This project
+predicts it from facts that are known much earlier: the type of college, its prices, its students and
+what it teaches.
 
-The data comes from the U.S. Department of Education
-[College Scorecard](https://collegescorecard.ed.gov/data/) (Most Recent Cohorts, institution level).
+It is a supervised regression problem. A model learns from 3,967 colleges whose earnings are known and
+then predicts earnings for colleges it has not seen.
 
 ## Live app
 
 **https://college-earnings-prediction.streamlit.app**
 
-The app has five pages: an overview of the project, the data with charts, the preprocessing steps,
-a comparison of the models, and a page where you can describe a college and get a prediction.
+The app has five pages:
+
+| Page | What you can do there |
+|---|---|
+| Home | See what the project is about and the main numbers |
+| Data overview | Filter and browse the data, see its statistics, distributions and correlations |
+| Preprocessing | See every cleaning step, the new features, missing values, outliers, scaling and encoding |
+| Model comparison | Compare the four models, their scores, their tuning and where they go wrong |
+| Predict earnings | Start from a real college, change anything about it and get a prediction with an explanation |
+
+## Results
+
+Four models were trained and compared with a simple baseline. These are their scores on 596 test
+colleges that no model saw during training.
+
+| Model | RMSE | MAE | MAPE | R² |
+|---|---|---|---|---|
+| **SVR (RBF kernel), final model** | **$6,360** | **$3,972** | **8.1%** | **0.888** |
+| Histogram Gradient Boosting | $6,516 | $4,098 | 8.2% | 0.882 |
+| Random Forest | $6,886 | $4,303 | 8.6% | 0.869 |
+| ElasticNet | $7,969 | $5,140 | 10.3% | 0.824 |
+| Baseline (predicts the median for every college) | $19,301 | $13,695 | 28.7% | -0.031 |
+
+SVR was chosen because it had the lowest error on the validation set. SVR and Gradient Boosting are
+very close, and on this test set they cannot really be told apart. The feature the model relies on most
+is the family income of the students a college enrols.
+
+## Data
+
+The data is the [College Scorecard](https://collegescorecard.ed.gov/data/) from the U.S. Department of
+Education, file "Most Recent Cohorts: Institution" (6,272 colleges, 3,379 columns). The U.S. Department of
+Education publishes it as open data that anyone may use.
+
+The raw file is about 102 MB, so it is not stored here. The app does not need it. To re-run the
+notebook you need to download it first: see [data/README.md](data/README.md).
 
 ## Repository layout
 
 | Path | Contents |
 |---|---|
 | `notebook.ipynb` | The full pipeline: loading, EDA, cleaning, feature engineering, training and evaluation |
-| `app.py`, `app_pages/` | The Streamlit app (entry file and one file per page) |
+| `app.py`, `app_pages/` | The Streamlit app: the entry file and one file per page |
 | `.streamlit/` | App settings (colour theme) |
 | `src/` | A small custom transformer used by the pipeline, and shared helpers for the app |
-| `data/` | Processed tables and a note on how to get the raw dataset ([data/README.md](data/README.md)) |
+| `data/` | Processed tables and a note on how to get the raw dataset |
 | `models/` | Trained models and `metadata.json` with their settings and scores |
 | `reports/` | Result tables and figures produced by the notebook |
+| `requirements.txt` | Every package with its exact version |
 
-## Getting started
+## Setup
+
+You need Python 3.9, 3.10, 3.11 or 3.12. The app online runs on Python 3.12.
+
+1. Download the project and go into its folder:
+
+   ```bash
+   git clone https://github.com/tursunmuratovdilmurad-blip/college-earnings-prediction.git
+   cd college-earnings-prediction
+   ```
+
+2. Make a virtual environment, so the packages do not mix with anything else on your computer.
+
+   On macOS or Linux:
+
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+   On Windows:
+
+   ```bash
+   py -m venv .venv
+   .venv\Scripts\activate
+   ```
+
+3. Install the packages:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Run the app
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The app works with the files already in this repository. To re-run the notebook you also need the raw
-dataset, see [data/README.md](data/README.md).
+The app opens in your browser at http://localhost:8501. It uses the files already in this repository,
+so it works without the raw dataset.
 
-## Status
+## Run the notebook
 
-Work in progress. The plan:
+1. Download the raw dataset and put `Most-Recent-Cohorts-Institution.csv` in the `data/` folder, as
+   described in [data/README.md](data/README.md).
+2. Run the notebook from the project folder, because it finds its files from there. Either open
+   `notebook.ipynb` in VS Code or Jupyter (for Jupyter, run `pip install notebook` and then
+   `jupyter notebook`), or run all of it from the command line:
 
-- [x] Data pipeline notebook (cleaning, feature engineering, model training, evaluation)
-- [x] Streamlit app with data exploration, preprocessing, model comparison and prediction pages
-- [ ] Setup instructions and pinned requirements
+   ```bash
+   jupyter nbconvert --to notebook --execute --inplace notebook.ipynb --ExecutePreprocessor.timeout=1800
+   ```
+
+A full run takes a few minutes (about three on a recent laptop). It writes the cleaned data, the trained
+models, the result tables and the figures again. Every random step uses a fixed seed
+(`RANDOM_STATE = 42`), so the models, scores and predictions come out exactly the same as the files in
+this repository. Only the recorded run times and the date in `models/metadata.json` change.
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+The code is under the MIT licence, see [LICENSE](LICENSE). The data belongs to the U.S. Department of
+Education and is free to use.
