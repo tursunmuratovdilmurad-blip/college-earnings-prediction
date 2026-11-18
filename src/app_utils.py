@@ -176,6 +176,16 @@ def show_chart(fig) -> None:
     st.plotly_chart(fig, use_container_width=True)
 
 
+def section_picker(sections: list, key: str) -> str:
+    """A row of buttons for choosing which part of a page to show.
+
+    Used instead of st.tabs: Streamlit draws charts in hidden tabs at a fixed 700 pixels and does not
+    redraw them when the tab opens, so on a phone their right side was cut off. Here only the chosen
+    section is drawn, at the moment it becomes visible, so every chart gets the right width.
+    """
+    return st.radio("Section", sections, horizontal=True, key=key, label_visibility="collapsed")
+
+
 def usd(value: float) -> str:
     """Format a number as whole dollars, e.g. 45574.2 -> '$45,574'."""
     return f"${value:,.0f}"

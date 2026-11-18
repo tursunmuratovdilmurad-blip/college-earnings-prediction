@@ -17,9 +17,12 @@ st.write(
 )
 
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Colleges in the model", f"{meta['dataset']['rows_modelled']:,}")
-col2.metric("Features used", len(meta["features"]["all"]))
-col3.metric("Final model", best_name)
+# short labels and values so the four tiles fit on narrow screens; the details are in the help text
+col1.metric("Colleges", f"{meta['dataset']['rows_modelled']:,}", help="Colleges in the cleaned data the model uses.")
+col2.metric("Features", len(meta["features"]["all"]), help="Facts about each college that the model uses.")
+model_help = ("Support Vector Regression with an RBF (radial basis function) kernel."
+              if best_name.startswith("SVR") else best_name)
+col3.metric("Final model", best_name.split(" (")[0], help=model_help)
 col4.metric("Typical error", usd(best_test["MAE"]),
             help="Mean absolute error on the held-out test set: colleges the model never saw in training.")
 

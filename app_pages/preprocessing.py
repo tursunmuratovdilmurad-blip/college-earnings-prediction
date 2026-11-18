@@ -7,7 +7,7 @@ import streamlit as st
 
 from src.app_utils import (TARGET, column_label, load_fit_data, load_metadata, load_model_table,
                            load_preprocessor, load_raw_subset, load_report_table, load_state_encoding,
-                           numeric_preprocessing_details, show_chart)
+                           numeric_preprocessing_details, section_picker, show_chart)
 
 SUBJECT_GROUPS = {
     "STEM_SHARE": ["PCIP11", "PCIP14", "PCIP15", "PCIP26", "PCIP27", "PCIP40", "PCIP41"],
@@ -45,11 +45,10 @@ st.write(
     f"{len(before):,} colleges used to train the final model, never from the test set."
 )
 
-tab_clean, tab_new, tab_missing, tab_outliers, tab_scaling, tab_encoding, tab_college = st.tabs(
-    ["Cleaning steps", "New features", "Missing values", "Outliers", "Scaling", "Encoding", "One college"])
+section = section_picker(['Cleaning steps', 'New features', 'Missing values', 'Outliers', 'Scaling', 'Encoding', 'One college'], key="prep_section")
 
 # ── Tab 1: cleaning ──────────────────────────────────────────────────────────
-with tab_clean:
+if section == 'Cleaning steps':
     audit = load_report_table("cleaning_audit.csv")
     removed = audit[audit["unit"] == "rows removed"]
     repaired = audit[audit["unit"] == "rows repaired"]
@@ -81,7 +80,7 @@ with tab_clean:
                  hide_index=True, width="stretch")
 
 # ── Tab 2: missing values ────────────────────────────────────────────────────
-with tab_missing:
+if section == 'Missing values':
     missing_before = int(before.isna().sum().sum())
     col1, col2, col3 = st.columns(3)
     col1.metric("Missing cells before", f"{missing_before:,}")
@@ -115,7 +114,7 @@ with tab_missing:
                  width="stretch")
 
 # ── Tab 3: outliers ──────────────────────────────────────────────────────────
-with tab_outliers:
+if section == 'Outliers':
     st.write(
         "Extreme values can pull a model around. They are not deleted here. Any value below the 1st percentile "
         "or above the 99th percentile of the training data is pulled back to that limit, so the college stays "
@@ -130,12 +129,13 @@ with tab_outliers:
     iqr_share = ((values < q1 - 1.5 * (q3 - q1)) | (values > q3 + 1.5 * (q3 - q1))).mean()
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Lower limit", f"{row['lower cap']:,.2f}")
-    col2.metric("Upper limit", f"{row['upper cap']:,.2f}")
+    limit = lambda v: f"{v:,.0f}" if abs(v) >= 100 else f"{v:,.2f}"   # no decimals on large numbers, so it fits
+    col1.metric("Lower limit", limit(row["lower cap"]), help=f"Exact value: {row['lower cap']:,.4f}")
+    col2.metric("Upper limit", limit(row["upper cap"]), help=f"Exact value: {row['upper cap']:,.4f}")
     col3.metric("Values capped", f"{int(row['values capped']):,}", help=f"Out of {len(values):,} colleges.")
-    col4.metric("Flagged by the 1.5 x IQR rule", f"{iqr_share:.1%}",
-                help="The usual textbook rule. On lopsided data it marks far too many real colleges as outliers, "
-                     "which is why it is not used here.")
+    col4.metric("IQR rule flags", f"{iqr_share:.1%}",
+                help="Share of colleges the usual 1.5 x IQR rule would call outliers. On lopsided data it marks "
+                     "far too many real colleges as outliers, which is why it is not used here.")
 
     fig = go.Figure()
     fig.add_trace(go.Box(x=values, name="Before", marker_color="#eb7a2d", boxpoints="outliers"))
@@ -147,7 +147,7 @@ with tab_outliers:
     st.caption(f"Largest value before: {values.max():,.2f}. Largest value after capping: {capped.max():,.2f}.")
 
 # ── Tab 4: scaling ───────────────────────────────────────────────────────────
-with tab_scaling:
+if section == 'Scaling':
     st.write(
         "Features come in very different sizes: enrolment is in thousands and a share is between 0 and 1. "
         "Two of the models are sensitive to this, so every number feature is rescaled to a mean of 0 and a "
@@ -184,7 +184,7 @@ with tab_scaling:
     st.dataframe(compare.style.format("{:,.2f}"), width="stretch")
 
 # ── Tab: new features ────────────────────────────────────────────────────────
-with tab_new:
+if section == 'New features':
     table = load_model_table()
     raw = load_raw_subset()
     raw = raw[raw["UNITID"].isin(table["UNITID"])].apply(pd.to_numeric, errors="coerce")
@@ -246,7 +246,7 @@ with tab_new:
     )
 
 # ── Tab: encoding ────────────────────────────────────────────────────────────
-with tab_encoding:
+if section == 'Encoding':
     prep = load_preprocessor()
     st.write("Models work with numbers, so text columns have to be turned into numbers. Three methods are used, "
              "each where it fits.")
@@ -292,14 +292,16 @@ with tab_encoding:
                "colleges earn similar amounts.")
 
 # ── Tab: one college through every step ──────────────────────────────────────
-with tab_college:
+if section == 'One college':
     table = load_model_table()
     prep = load_preprocessor()
     st.write("Pick a college to see its own values before and after preprocessing.")
     names = (table["INSTNM"] + " (" + table["CITY"] + ", " + table["STABBR"] + ")").tolist()
-    default = next((i for i, n in enumerate(names) if n.startswith("Massachusetts Institute of Technology")), 0)
-    position = st.selectbox("College", range(len(names)), index=default, format_func=lambda i: names[i],
-                            key="college_pick")
+    choices = {}                                                # text shown in the menu -> position in the table
+    for i, name in enumerate(names):
+        choices[name if name not in choices else f"{name} [{i}]"] = i   # keeps every entry unique
+    default = next((i for i, n in enumerate(choices) if n.startswith("Massachusetts Institute of Technology")), 0)
+    position = choices[st.selectbox("College", list(choices), index=default, key="college_pick")]
     college = table.iloc[[position]]
     features = meta["features"]["all"]
     result = pd.Series(prep.transform(college[features])[0], index=prep.get_feature_names_out())
@@ -307,7 +309,7 @@ with tab_college:
     col1, col2, col3 = st.columns(3)
     col1.metric("Earnings after 10 years", f"${college[TARGET].iloc[0]:,.0f}")
     col2.metric("Data set", college["SPLIT"].iloc[0].capitalize())
-    col3.metric("Values the model receives", len(result),
+    col3.metric("Model inputs", len(result),
                 help=f"{len(features)} features go in. One-hot columns and 'was missing' flags bring the total up.")
 
     st.subheader("Number features")

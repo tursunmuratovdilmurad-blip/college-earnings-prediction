@@ -7,7 +7,7 @@ import streamlit as st
 
 from src.app_utils import (TARGET, column_label, load_all_preprocessed, load_final_model, load_metadata,
                            load_model_table, load_preprocessor, load_report_table, most_typical_college,
-                           show_chart, usd, usd_md)
+                           section_picker, show_chart, usd, usd_md)
 
 meta = load_metadata()
 table = load_model_table()
@@ -120,10 +120,12 @@ st.write(
 # ── Starting point ───────────────────────────────────────────────────────────
 names = (table["INSTNM"] + " (" + table["CITY"] + ", " + table["STABBR"] + ")")
 typical = most_typical_college()
-choices = [typical] + [i for i in names.sort_values().index if i != typical]
-start = st.selectbox(
-    "Start from", choices, key="start_from",
-    format_func=lambda i: f"{names[i]}, the most typical college in the data" if i == typical else names[i])
+order = [typical] + [i for i in names.sort_values().index if i != typical]
+choices = {}                                                    # text shown in the menu -> row of the college
+for i in order:
+    text = f"{names[i]}, the most typical college in the data" if i == typical else names[i]
+    choices[text if text not in choices else f"{text} [{i}]"] = i   # keeps every entry unique
+start = choices[st.selectbox("Start from", list(choices), key="start_from")]
 base = table.loc[start, FEATURES].to_dict()
 missing_in_base = [f for f in FEATURES if pd.isna(base[f])]
 for feature in missing_in_base:                                 # a gap in the real data starts from the typical value
@@ -182,10 +184,10 @@ kind = values["CONTROL"].lower()
 
 with result_box:
     col1, col2, col3 = st.columns(3)
-    col1.metric("Predicted earnings after 10 years", usd(prediction))
-    col2.metric("Real figure for the starting college", usd(real),
-                help="The published earnings of the college you started from.")
-    col3.metric("Median of all colleges", usd(overall))
+    col1.metric("Prediction", usd(prediction),
+                help="Predicted median earnings of former students 10 years after they started.")
+    col2.metric("Real figure", usd(real), help="The published earnings of the college you started from.")
+    col3.metric("All colleges", usd(overall), help="Median earnings of all colleges in the data.")
     st.write(
         f"Likely range: **{usd_md(low)} to {usd_md(high)}**. In testing, 8 out of 10 {kind} colleges had true "
         "earnings inside a range of this width around the prediction."
@@ -222,9 +224,9 @@ with result_box:
 
 # ── Understand the prediction ────────────────────────────────────────────────
 st.subheader("Understand the prediction")
-tab_why, tab_similar, tab_whatif = st.tabs(["What pushes it up or down", "Similar colleges", "What if"])
+section = section_picker(['What pushes it up or down', 'Similar colleges', 'What if'], key="predict_section")
 
-with tab_why:
+if section == 'What pushes it up or down':
     st.write(
         "For each feature, the model is asked what it would predict for the same college with the typical "
         "value of that one feature. The difference shows how much this college's own value pushes the "
@@ -250,7 +252,7 @@ with tab_why:
         st.dataframe(pushes.style.format({"Effect on the prediction (USD)": "{:+,.0f}"}), hide_index=True,
                      width="stretch")
 
-with tab_similar:
+if section == 'Similar colleges':
     st.write("These are the real colleges most like the one described above, after all features are put on the "
              "same scale. If the prediction is sensible, their real earnings should be close to it.")
     count = st.slider("Number of similar colleges", 5, 25, 10, key="similar_count")
@@ -266,7 +268,7 @@ with tab_similar:
 
     col1, col2, col3 = st.columns(3)
     col1.metric("This prediction", usd(prediction))
-    col2.metric("Median of the similar colleges", usd(similar_median))
+    col2.metric("Similar colleges", usd(similar_median), help="Median real earnings of the colleges listed below.")
     col3.metric("Gap", usd(abs(prediction - similar_median)))
 
     chart = similar.sort_values(TARGET)
@@ -281,7 +283,7 @@ with tab_similar:
                  hide_index=True, width="stretch")
     st.caption("Difference is the distance between two colleges across all features. Smaller means more alike.")
 
-with tab_whatif:
+if section == 'What if':
     st.write("Change one feature across its usual range while everything else stays as described above, and "
              "see how the prediction moves.")
     number_inputs = [f for group in GROUPS.values() for f in group]

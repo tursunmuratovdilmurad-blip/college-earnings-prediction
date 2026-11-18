@@ -5,7 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from src.app_utils import OWNERSHIP_COLORS, column_label, load_metadata, load_report_table, show_chart, usd
+from src.app_utils import OWNERSHIP_COLORS, column_label, load_metadata, load_report_table, section_picker, show_chart, usd
 
 meta = load_metadata()
 BEST = meta["best_model"]["name"]
@@ -63,11 +63,10 @@ st.write(
     f"The model chosen in the end is **{BEST}**."
 )
 
-tab_models, tab_scores, tab_tuning, tab_pred, tab_groups, tab_drivers = st.tabs(
-    ["The models", "Scores", "Tuning", "Predictions", "Errors by group", "What drives the predictions"])
+section = section_picker(['The models', 'Scores', 'Tuning', 'Predictions', 'Errors by group', 'What drives the predictions'], key="models_section")
 
 # ── Tab 1: what the models are ───────────────────────────────────────────────
-with tab_models:
+if section == 'The models':
     st.write("The models were picked because they make different guesses about what the true pattern looks like. "
              "If they had all been similar, comparing them would say little about the data.")
     about = pd.DataFrame([{"Model": name, "How it works": how, "What it assumes": assumes, "Weak spot": weak}
@@ -79,13 +78,17 @@ with tab_models:
     )
 
 # ── Tab 2: scores ────────────────────────────────────────────────────────────
-with tab_scores:
+if section == 'Scores':
     test = scores["test"]
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Best RMSE on the test set", usd(test.loc[BEST, "RMSE"]))
-    col2.metric("Typical error (MAE)", usd(test.loc[BEST, "MAE"]))
-    col3.metric("Error in percent (MAPE)", f"{test.loc[BEST, 'MAPE_%']:.1f}%")
-    col4.metric("Differences explained (R²)", f"{test.loc[BEST, 'R2']:.0%}")
+    col1.metric("Test RMSE", usd(test.loc[BEST, "RMSE"]),
+                help="Root mean squared error of the final model on the test set. Large misses count extra.")
+    col2.metric("MAE", usd(test.loc[BEST, "MAE"]),
+                help="Mean absolute error: how far off the final model is on average, in dollars.")
+    col3.metric("MAPE", f"{test.loc[BEST, 'MAPE_%']:.1f}%",
+                help="Mean absolute percentage error: how far off the final model is on average, in percent.")
+    col4.metric("R²", f"{test.loc[BEST, 'R2']:.0%}",
+                help="Share of the differences between colleges that the final model explains.")
 
     left, right = st.columns([1, 1])
     split_names = {"Test": "test", "Validation": "validation", "Training": "train"}
@@ -139,7 +142,7 @@ with tab_scores:
     )
 
 # ── Tab 3: tuning ────────────────────────────────────────────────────────────
-with tab_tuning:
+if section == 'Tuning':
     st.write(
         "Each model has settings that are not learned from the data and must be chosen, called hyperparameters. "
         "They were tested with 5-fold cross-validation on the training set: the data is cut into five parts, the "
@@ -157,8 +160,8 @@ with tab_tuning:
     col1, col2, col3 = st.columns(3)
     col1.metric("Settings tried", int(summary["candidates"]))
     col2.metric("Models trained", int(summary["fits"]), help="Settings tried times five folds.")
-    col3.metric("Best cross-validation RMSE", usd(summary["cv_RMSE"]),
-                help=f"Give or take {usd(summary['cv_RMSE_std'])} between the five folds.")
+    col3.metric("Best CV RMSE", usd(summary["cv_RMSE"]),
+                help=f"Best cross-validation RMSE, give or take {usd(summary['cv_RMSE_std'])} between the five folds.")
 
     st.subheader("Settings and the best values found")
     rows = []
@@ -208,14 +211,16 @@ def results_for(model: str) -> pd.DataFrame:
 
 
 # ── Tab 4: predicted against actual ──────────────────────────────────────────
-with tab_pred:
+if section == 'Predictions':
     st.write(f"These charts use the {len(predictions):,} test colleges, which no model saw during training.")
     shown = st.selectbox("Model", MODELS, index=MODELS.index(BEST), key="pred_model")
     res = results_for(shown)
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Within 10% of the true figure", f"{(res['error %'] <= 10).mean():.0%}")
-    col2.metric("Within 20%", f"{(res['error %'] <= 20).mean():.0%}")
+    col1.metric("Within 10%", f"{(res['error %'] <= 10).mean():.0%}",
+                help="Share of test colleges whose prediction is within 10% of the true figure.")
+    col2.metric("Within 20%", f"{(res['error %'] <= 20).mean():.0%}",
+                help="Share of test colleges whose prediction is within 20% of the true figure.")
     col3.metric("Average error", usd(res["error"].abs().mean()))
     col4.metric("Largest miss", usd(res["error"].abs().max()))
 
@@ -251,8 +256,8 @@ with tab_pred:
         show_chart(fig)
 
 # ── Tab 5: errors by group ───────────────────────────────────────────────────
-with tab_groups:
-    st.write("One overall score can hide groups where a model does badly. This tab splits the test errors.")
+if section == 'Errors by group':
+    st.write("One overall score can hide groups where a model does badly. This section splits the test errors.")
     left, right = st.columns(2)
     picked = left.selectbox("Model", MODELS, index=MODELS.index(BEST), key="group_model")
     group_names = {"Ownership": "CONTROL", "Main degree awarded": "PREDDEG"}
@@ -297,7 +302,7 @@ with tab_groups:
                                      "Error (USD)": "{:+,.0f}"}), hide_index=True, width="stretch")
 
 # ── Tab 6: what drives the predictions ───────────────────────────────────────
-with tab_drivers:
+if section == 'What drives the predictions':
     st.write(
         f"To see what {BEST} relies on, one feature at a time was shuffled and the model was scored again. "
         "If the error goes up a lot, the model depends on that feature. This was measured on the validation set, "

@@ -14,6 +14,7 @@ plotly==7.1.0
 
 # App
 streamlit==1.50.0
+pyarrow==21.0.0
 
 # Notebook
 ipykernel==6.31.0

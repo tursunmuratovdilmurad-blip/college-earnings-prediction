@@ -1,11 +1,13 @@
 """Data overview page: browse the raw and cleaned tables, their columns, statistics and charts."""
+import textwrap
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
 from src.app_utils import (CONTROL_MAP, OWNERSHIP_COLORS, PREDDEG_MAP, REGION_MAP, TARGET, column_label,
-                           load_model_table, load_raw_subset, show_chart, usd)
+                           load_model_table, load_raw_subset, section_picker, show_chart, usd)
 
 ID_COLUMNS = ["INSTNM", "CITY", "STABBR", "CONTROL", "PREDDEG"]
 NOT_NUMERIC = ID_COLUMNS + ["UNITID", "OPEID6", "SPLIT", "REGION", "LOCALE_TYPE"]
@@ -24,10 +26,16 @@ def axis_name(column: str) -> str:
     """Short axis title: the plain-language name if there is one, otherwise the column code."""
     return column_label(column).replace(": the target", "") or column
 
+
+def wrapped_name(column: str, width: int = 22) -> str:
+    """The plain-language name split over short lines, so chart labels stay narrow on small screens."""
+    return "<br>".join(textwrap.wrap(axis_name(column), width))
+
+
 st.title("Data overview")
 st.write(
     "Look at the data before and after cleaning. Use the filters on the left to narrow the table down, "
-    "then check the columns, their types and their summary statistics in the tabs below."
+    "then pick a section below to see the table, its columns, its statistics or the charts."
 )
 
 view = st.radio("Which table do you want to see?",
@@ -87,12 +95,10 @@ numeric = shown.drop(columns=[c for c in NOT_NUMERIC if c in shown.columns]).app
 number_columns = list(numeric.columns)
 key_columns = [c for c in KEY_COLUMNS if c in numeric]
 
-tab_table, tab_columns, tab_stats, tab_dist, tab_groups, tab_scatter, tab_corr = st.tabs(
-    ["Table", "Columns and types", "Summary statistics", "Distributions", "Group comparison",
-     "Relationships", "Correlations"])
+section = section_picker(['Table', 'Columns and types', 'Summary statistics', 'Distributions', 'Group comparison', 'Relationships', 'Correlations'], key="overview_section")
 
 # ── Tab 1: the table itself ──────────────────────────────────────────────────
-with tab_table:
+if section == 'Table':
     default_cols = ID_COLUMNS + ["UGDS", TARGET] + ([] if is_raw else ["SPLIT"])
     columns = st.multiselect("Columns to show", list(df.columns), default=default_cols)
     if columns:
@@ -103,7 +109,7 @@ with tab_table:
         st.info("Pick at least one column.")
 
 # ── Tab 2: columns and data types ────────────────────────────────────────────
-with tab_columns:
+if section == 'Columns and types':
     info = pd.DataFrame({
         "Column": df.columns,
         "Meaning": [column_label(c) for c in df.columns],
@@ -128,7 +134,7 @@ with tab_columns:
     st.dataframe(info, hide_index=True, width="stretch")
 
 # ── Tab 3: summary statistics ────────────────────────────────────────────────
-with tab_stats:
+if section == 'Summary statistics':
     default_stats = [c for c in [TARGET, "UGDS", "INEXPFTE", "MD_FAMINC", "PCTPELL", "AVGFACSAL"] if c in numeric]
     picked = st.multiselect("Columns to summarise", number_columns, default=default_stats, format_func=name_of)
     if picked:
@@ -152,7 +158,7 @@ with tab_stats:
         st.info("Pick at least one column.")
 
 # ── Tab 4: distribution of one column ────────────────────────────────────────
-with tab_dist:
+if section == 'Distributions':
     st.write("A histogram shows how the values of one column are spread out. The box above it marks the "
              "middle half of the colleges, and the dots are unusually high or low values.")
     left, right = st.columns([3, 1])
@@ -175,7 +181,7 @@ with tab_dist:
                    "A skewness near 0 means the two sides are balanced. Above 1 means a long tail to the right.")
 
 # ── Tab 5: one column compared across groups ─────────────────────────────────
-with tab_groups:
+if section == 'Group comparison':
     st.write("A box plot compares groups side by side. The line inside each box is the median, the box holds "
              "the middle half of the colleges, and the dots are outliers.")
     groups = {label: col for label, col in GROUPS.items() if col in shown.columns}
@@ -201,7 +207,7 @@ with tab_groups:
         st.dataframe(summary.style.format("{:,.2f}").format("{:,.0f}", subset=["Colleges"]), width="stretch")
 
 # ── Tab 6: two columns against each other ────────────────────────────────────
-with tab_scatter:
+if section == 'Relationships':
     st.write("A scatter plot puts one dot per college and shows whether two columns move together, and "
              "whether the link is straight, curved or not there at all.")
     col_x, col_y, col_opt = st.columns([2, 2, 1])
@@ -233,7 +239,7 @@ with tab_scatter:
                        "a strong link, and values near 0 mean no clear link.")
 
 # ── Tab 7: correlation matrix ────────────────────────────────────────────────
-with tab_corr:
+if section == 'Correlations':
     st.write("The correlation matrix shows every pair of columns at once. Red means two columns rise together, "
              "blue means one rises as the other falls.")
     left, right = st.columns([4, 1])
@@ -249,19 +255,22 @@ with tab_corr:
         st.info("Pick at least two columns that have more than one value.")
     else:
         corr = numeric[picked].corr(method=method.lower())
-        # full names down the side, short column codes along the bottom so the labels stay readable
-        fig = px.imshow(corr.values, x=picked, y=[axis_name(c) for c in picked], text_auto=".2f",
+        # wrapped full names down the side, short column codes along the bottom and a thin colour scale,
+        # so the coloured cells keep most of the width on a phone screen
+        fig = px.imshow(corr.values, x=picked, y=[wrapped_name(c) for c in picked], text_auto=".2f",
                         color_continuous_scale="RdBu_r", zmin=-1, zmax=1, aspect="auto")
-        fig.update_layout(height=max(420, 34 * len(picked) + 120), margin=dict(t=30),
-                          coloraxis_colorbar=dict(title="Correlation"))
-        fig.update_xaxes(tickangle=-45)
+        fig.update_layout(height=max(460, 46 * len(picked) + 160), margin=dict(t=30, r=10),
+                          coloraxis_colorbar=dict(title="", thickness=10, len=0.9))
+        fig.update_xaxes(tickangle=-45, automargin=True)
+        fig.update_yaxes(tickfont=dict(size=11), automargin=True)
         show_chart(fig)
         if TARGET in picked and len(picked) > 2:
             with_target = corr[TARGET].drop(TARGET).sort_values()
-            bars = px.bar(x=with_target.values, y=[axis_name(c) for c in with_target.index], orientation="h",
+            bars = px.bar(x=with_target.values, y=[wrapped_name(c, 26) for c in with_target.index], orientation="h",
                           color=with_target.values, color_continuous_scale="RdBu_r", range_color=(-1, 1),
                           labels={"x": f"{method} correlation with earnings", "y": ""})
-            bars.update_layout(coloraxis_showscale=False, margin=dict(t=30),
-                               height=max(300, 28 * len(with_target) + 100))
+            bars.update_layout(coloraxis_showscale=False, margin=dict(t=30, r=10),
+                               height=max(300, 34 * len(with_target) + 100))
+            bars.update_yaxes(tickfont=dict(size=11), automargin=True)
             st.subheader("Correlation with earnings")
             show_chart(bars)
