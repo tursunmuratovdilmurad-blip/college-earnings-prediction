@@ -59,7 +59,8 @@ notebook you need to download it first: see [data/README.md](data/README.md).
 | `data/` | Processed tables and a note on how to get the raw dataset |
 | `models/` | Trained models and `metadata.json` with their settings and scores |
 | `reports/` | Result tables and figures produced by the notebook |
-| `requirements.txt` | Every package with its exact version |
+| `requirements.txt` | Every package the project uses, with its exact version |
+| `pyproject.toml`, `uv.lock` | The same packages for the uv tool, with the exact version of every package they depend on |
 
 ## Setup
 
@@ -93,6 +94,21 @@ You need Python 3.9, 3.10, 3.11 or 3.12. The app online runs on Python 3.12.
    ```bash
    pip install -r requirements.txt
    ```
+
+### Exact install with uv
+
+`requirements.txt` fixes the version of every package the project uses directly. `uv.lock` goes one step
+further and also fixes the version of every package those depend on, so every computer gets exactly the
+same set. The live app installs from `uv.lock`. To use it, install [uv](https://docs.astral.sh/uv/) and run
+this in the project folder instead of steps 2 and 3:
+
+```bash
+uv sync --locked
+```
+
+Then put `uv run` in front of the commands below, for example `uv run streamlit run app.py`.
+
+If you change a version, change it in both `pyproject.toml` and `requirements.txt`, then run `uv lock`.
 
 ## Run the app
 

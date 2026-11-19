@@ -1,0 +1,31 @@
+[project]
+name = "college-earnings-prediction"
+version = "1.0.0"
+description = "Predicting graduate earnings of U.S. colleges from College Scorecard data"
+readme = "README.md"
+requires-python = ">=3.9,<3.13"
+license = { text = "MIT" }
+
+# The same versions as requirements.txt. uv.lock also fixes the versions of every package these depend on.
+dependencies = [
+    # Data and modelling
+    "numpy==2.0.2",
+    "pandas==2.3.3",
+    "scipy==1.13.1",
+    "scikit-learn==1.6.1",
+    "joblib==1.5.3",
+    # Charts
+    "matplotlib==3.9.4",
+    "seaborn==0.13.2",
+    "plotly==7.1.0",
+    # App
+    "streamlit==1.50.0",
+    "pyarrow==21.0.0",
+    # Notebook
+    "ipykernel==6.31.0",
+    "nbconvert==7.17.2",
+]
+
+[tool.uv]
+# This is an app, not a library, so there is nothing to build or install from this folder itself.
+package = false
