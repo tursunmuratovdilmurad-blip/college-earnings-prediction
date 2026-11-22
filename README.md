@@ -61,6 +61,8 @@ notebook you need to download it first: see [data/README.md](data/README.md).
 | `reports/` | Result tables and figures produced by the notebook |
 | `requirements.txt` | Every package the project uses, with its exact version |
 | `pyproject.toml`, `uv.lock` | The same packages for the uv tool, with the exact version of every package they depend on |
+| `Dockerfile`, `.dockerignore` | A container that runs the app |
+| `.github/workflows/` | A check that builds the container and opens every page of the app on every push |
 
 ## Setup
 
@@ -118,6 +120,19 @@ streamlit run app.py
 
 The app opens in your browser at http://localhost:8501. It uses the files already in this repository,
 so it works without the raw dataset.
+
+### Run the app with Docker
+
+If you have [Docker](https://www.docker.com/), you can run the app without installing Python or any
+package. The image installs exactly the versions in `uv.lock` on Python 3.12, like the live app.
+
+```bash
+docker build -t college-earnings .
+docker run -p 8501:8501 college-earnings
+```
+
+Then open http://localhost:8501. Every time code is pushed to GitHub, a check builds this image, starts
+the app and opens every page (see `.github/workflows/docker.yml`).
 
 ## Run the notebook
 

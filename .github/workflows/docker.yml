@@ -1,0 +1,61 @@
+name: Docker image
+
+# Builds the Docker image and checks that the app starts and every page opens without an error.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker build -t college-earnings .
+
+      - name: Start the app
+        run: docker run -d --name app -p 8501:8501 college-earnings
+
+      - name: Wait until the app answers
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fs http://localhost:8501/_stcore/health; then echo " - app is up"; exit 0; fi
+            sleep 2
+          done
+          docker logs app
+          exit 1
+
+      - name: Open every page and every section
+        run: |
+          docker exec -i app python - <<'EOF'
+          import sys
+          from pathlib import Path
+          from streamlit.testing.v1 import AppTest
+
+          sys.path.insert(0, str(Path.cwd()))
+          problems = []
+
+          def check(at, name):
+              at.run()
+              problems.extend(f"{name}: {e.value}" for e in at.exception)
+
+          check(AppTest.from_file("app.py", default_timeout=300), "app.py")
+          for page in sorted(Path("app_pages").glob("*.py")):
+              at = AppTest.from_file(str(page), default_timeout=300)
+              check(at, page.name)
+              sections = [r for r in at.radio if (r.key or "").endswith("_section")]
+              if sections:
+                  for option in list(sections[0].options):
+                      at.radio(key=sections[0].key).set_value(option)
+                      check(at, f"{page.name} / {option}")
+
+          print("\n".join(problems) if problems else "Every page and section opened without an error.")
+          sys.exit(1 if problems else 0)
+          EOF
+
+      - name: Show the app log if something failed
+        if: failure()
+        run: docker logs app

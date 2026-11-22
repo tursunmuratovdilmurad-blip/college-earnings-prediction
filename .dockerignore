@@ -1,0 +1,19 @@
+# Files the app does not need inside the container
+
+# Version control and local tools
+.git/
+.github/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.DS_Store
+
+# Raw dataset (102 MB) and other large or local files
+data/Most-Recent-Cohorts-Institution.csv
+models/random_forest.joblib
+*.zip
+*.docx
+scripts/
+reports/*.md
