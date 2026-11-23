@@ -29,3 +29,11 @@ dependencies = [
 [tool.uv]
 # This is an app, not a library, so there is nothing to build or install from this folder itself.
 package = false
+
+# Only needed to run the tests in tests/. "uv sync" installs these too; the Docker image leaves them out.
+[dependency-groups]
+dev = ["pytest==8.4.2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

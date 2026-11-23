@@ -1,0 +1,29 @@
+name: Tests
+
+# Runs the tests in tests/ on the oldest and the newest Python the project supports.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.4.0
+        with:
+          version: "0.13.8"
+
+      - name: Install the exact packages from uv.lock
+        run: uv sync --locked --python ${{ matrix.python-version }}
+
+      - name: Run the tests
+        run: uv run --locked pytest -v

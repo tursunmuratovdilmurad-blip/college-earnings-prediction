@@ -13,11 +13,12 @@ COPY --from=ghcr.io/astral-sh/uv:0.13.8 /uv /bin/uv
 WORKDIR /app
 
 # Install the packages first, so this slow step is reused when only the code changes
+# (--no-dev leaves out pytest, which only the tests need)
 ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never
 COPY pyproject.toml uv.lock ./
-RUN uv sync --locked --no-cache
+RUN uv sync --locked --no-dev --no-cache
 
 # Then the app itself: code, processed data, trained models and result tables
 COPY . .

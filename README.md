@@ -56,13 +56,14 @@ notebook you need to download it first: see [data/README.md](data/README.md).
 | `app.py`, `app_pages/` | The Streamlit app: the entry file and one file per page |
 | `.streamlit/` | App settings (colour theme) |
 | `src/` | A small custom transformer used by the pipeline, and shared helpers for the app |
+| `tests/` | Automated tests for the custom transformer, the saved models and the app |
 | `data/` | Processed tables and a note on how to get the raw dataset |
 | `models/` | Trained models and `metadata.json` with their settings and scores |
 | `reports/` | Result tables and figures produced by the notebook |
 | `requirements.txt` | Every package the project uses, with its exact version |
 | `pyproject.toml`, `uv.lock` | The same packages for the uv tool, with the exact version of every package they depend on |
 | `Dockerfile`, `.dockerignore` | A container that runs the app |
-| `.github/workflows/` | A check that builds the container and opens every page of the app on every push |
+| `.github/workflows/` | Checks that run on every push: the tests, and a build of the container that opens every page of the app |
 
 ## Setup
 
@@ -133,6 +134,20 @@ docker run -p 8501:8501 college-earnings
 
 Then open http://localhost:8501. Every time code is pushed to GitHub, a check builds this image, starts
 the app and opens every page (see `.github/workflows/docker.yml`).
+
+## Run the tests
+
+The tests check that the custom outlier capping works as intended, that the saved models load and give
+exactly the scores and predictions recorded by the notebook, and that every page of the app opens without
+an error. Run them from the project folder:
+
+```bash
+pip install pytest==8.4.2
+pytest
+```
+
+With uv, `uv sync` already installs pytest, so `uv run pytest` is enough. They take about a minute.
+GitHub runs them on Python 3.9 and 3.12 every time code is pushed (see `.github/workflows/tests.yml`).
 
 ## Run the notebook
 
