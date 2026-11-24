@@ -1,0 +1,16 @@
+model,setting,searched,tried,chosen,position
+ElasticNet,alpha,1e-05 ... 1 (11 values),11,3.1623e-05,inside the range
+ElasticNet,l1_ratio,"0.05, 0.2, 0.5, 0.8, 1",5,1,highest value tried
+Random Forest,n_estimators,"300, 500",2,500,highest value tried
+Random Forest,max_depth,"no limit, 8, 12, 16, 24",5,24,highest value tried
+Random Forest,min_samples_leaf,"1, 2, 4, 8",4,1,lowest value tried
+Random Forest,max_features,"0.2, 0.33, 0.5, sqrt, 1",5,0.5,inside the range
+Hist Gradient Boosting,learning_rate,"log-uniform, 0.01 to 0.3",40,0.053629,inside the range
+Hist Gradient Boosting,max_iter,"whole numbers, 150 to 799",37,356,inside the range
+Hist Gradient Boosting,max_leaf_nodes,"8, 15, 31, 63",4,31,inside the range
+Hist Gradient Boosting,min_samples_leaf,"5, 10, 20, 40",4,10,inside the range
+Hist Gradient Boosting,l2_regularization,"log-uniform, 0.001 to 10",40,1.213,inside the range
+Hist Gradient Boosting,max_features,"0.5, 0.8, 1",3,0.5,lowest value tried
+SVR (RBF),C,"log-uniform, 0.1 to 100",40,9.7178,inside the range
+SVR (RBF),gamma,"log-uniform, 0.0001 to 0.1",40,0.0036325,inside the range
+SVR (RBF),epsilon,"uniform, 0.01 to 0.2",40,0.069225,inside the range

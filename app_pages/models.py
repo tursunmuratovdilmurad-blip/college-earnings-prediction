@@ -5,7 +5,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from src.app_utils import OWNERSHIP_COLORS, column_label, load_metadata, load_report_table, section_picker, show_chart, usd
+from src.app_utils import (OWNERSHIP_COLORS, column_label, load_metadata, load_report_table, section_picker, show_chart,
+                            usd, usd_md)
 
 meta = load_metadata()
 BEST = meta["best_model"]["name"]
@@ -56,6 +57,9 @@ PARAMS = {
 
 scores = load_report_table("metrics_all_splits.csv", header=[0, 1], index_col=0)
 cv_summary = load_report_table("cv_summary.csv", index_col=0)
+cv_folds = load_report_table("cv_folds.csv", index_col=0)
+tuning_gain = load_report_table("tuning_gain.csv", index_col=0)
+search_space = load_report_table("search_space.csv", index_col=[0, 1])
 
 st.title("Model comparison")
 st.write(
@@ -168,8 +172,34 @@ if section == 'Tuning':
     for name, (meaning, searched, _) in PARAMS[tuned].items():
         value = best_params.get(name)
         rows.append({"Setting": name, "What it controls": meaning, "Range searched": searched,
-                     "Best value": "no limit" if value is None else str(value)})
+                     "Best value": "no limit" if value is None else str(value),
+                     "Where it lies": search_space.loc[(tuned, name), "position"]})
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+    st.caption("A best value at the very edge of what was tried can mean the range was too narrow. The notebook "
+               "(Section 4.3) checks every such case.")
+
+    st.subheader("The error on each fold")
+    st.write("This is the proof that cross-validation was run. For the best settings of each model, the table shows "
+             "the RMSE on each of the five folds, the part of the training data the model did not train on in that "
+             "round. Every model was checked on exactly the same five folds.")
+    fold_table = cv_folds[[c for c in cv_folds.columns if c.startswith("fold")] + ["mean", "std"]]
+    st.dataframe(fold_table.rename(columns={"mean": "average", "std": "spread"}).style.format("${:,.0f}"),
+                 width="stretch")
+    st.caption(f"The error changes by about {usd_md(cv_folds['std'].min())} to {usd_md(cv_folds['std'].max())} "
+               "from fold to fold. SVR and Gradient Boosting are the two best models on every fold, but each of them "
+               "wins on some folds, so cross-validation cannot tell them apart.")
+
+    st.subheader("Did tuning help?")
+    gain = tuning_gain.loc[tuned]
+    st.write(f"With the library's default settings, {tuned} had a cross-validation RMSE of {usd_md(gain.iloc[0])}. "
+             f"With the tuned settings it has {usd_md(gain.iloc[1])}, which is {usd_md(gain['improvement'])} "
+             f"({gain['improvement %']:.1f}%) better.")
+    if tuned == "ElasticNet":
+        st.write("Its default penalty is so strong that it switches off every feature, so the default model "
+                 "predicts the same value for every college. For this model, tuning was essential.")
+    else:
+        st.write("The default settings of this model are already sensible, so tuning gave a small improvement. "
+                 "Choosing the right kind of model mattered more than fine tuning.")
 
     st.subheader("How much does each setting matter?")
     st.write("Each dot is one combination of settings that was tried. A flat cloud means the setting hardly "
