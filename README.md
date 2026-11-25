@@ -22,6 +22,11 @@ The app has five pages:
 | Model comparison | Compare the four models, their scores, their tuning and where they go wrong |
 | Predict earnings | Start from a real college, change anything about it and get a prediction with an explanation |
 
+| | |
+|---|---|
+| ![Home page](docs/screenshots/home.png) | ![Data overview page](docs/screenshots/data_overview.png) |
+| ![Model comparison page](docs/screenshots/model_comparison.png) | ![Predict earnings page](docs/screenshots/predict.png) |
+
 ## Results
 
 Four models were trained and compared with a simple baseline. These are their scores on 596 test
@@ -38,6 +43,10 @@ colleges that no model saw during training.
 SVR was chosen because it had the lowest error on the validation set. SVR and Gradient Boosting are
 very close, and on this test set they cannot really be told apart. The feature the model relies on most
 is the family income of the students a college enrols.
+
+Every model was tuned with 5-fold cross-validation on the training set. Sections 4.2 and 4.3 of the notebook
+show the error on every fold, the settings that were searched and chosen, and how much tuning helped compared
+with the default settings. The Tuning section of the app's Model comparison page shows the same.
 
 ## Data
 
@@ -64,6 +73,7 @@ notebook you need to download it first: see [data/README.md](data/README.md).
 | `pyproject.toml`, `uv.lock` | The same packages for the uv tool, with the exact version of every package they depend on |
 | `Dockerfile`, `.dockerignore` | A container that runs the app |
 | `.github/workflows/` | Checks that run on every push: the tests, and a build of the container that opens every page of the app |
+| `docs/screenshots/` | The screenshots of the app shown above |
 
 ## Setup
 
@@ -133,7 +143,8 @@ docker run -p 8501:8501 college-earnings
 ```
 
 Then open http://localhost:8501. Every time code is pushed to GitHub, a check builds this image, starts
-the app and opens every page (see `.github/workflows/docker.yml`).
+the app and opens every page, both on a usual Intel or AMD processor and on an ARM processor like the one in
+Apple Silicon Macs (see `.github/workflows/docker.yml`).
 
 ## Run the tests
 

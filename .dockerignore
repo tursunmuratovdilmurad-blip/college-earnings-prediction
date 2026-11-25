@@ -18,4 +18,5 @@ models/random_forest.joblib
 *.docx
 scripts/
 tests/
+docs/
 reports/*.md
